@@ -45,7 +45,7 @@ with col3:
 st.sidebar.markdown('## :blue[Section Type] ##')
 col1, col2 = st.sidebar.columns([1,2])
 with col1:
-    Section_Type = st.sidebar.radio('Section Type', ('Rectangle', 'Circle'), horizontal = True, label_visibility = 'collapsed')
+    Section_Type = st.radio('Section Type', ('Rectangle', 'Circle'), horizontal = True, label_visibility = 'collapsed')
 with col2:
     if "Rectangle" in Section_Type:
         b = 400.

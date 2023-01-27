@@ -3,6 +3,9 @@
 
 import streamlit as st
 import time
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 
 # -- Set page config
 # emoji: https://streamlit-emoji-shortcodes-streamlit-app-gwckff.streamlit.app/
@@ -14,9 +17,7 @@ st.set_page_config(page_title = "P-M Diagram", page_icon = ":star2:", layout = "
     })
 
 # st.snow()
-# st.ballons()
-color = st.color_picker('Pick A Color', '#00f900')
-st.write('The current color is', color)
+# st.balloons()
 
 # Sidebar setting
 st.sidebar.markdown('## :blue[Design Code] ##')
@@ -43,21 +44,36 @@ with col3:
     Ef = st.number_input(':green[$E_{f}$ [GPa]]', min_value = 0.1, value = 45.0, step = 1., format = '%f')
 
 st.sidebar.markdown('## :blue[Section Type] ##')
-col1, col2 = st.sidebar.columns([1,2])
+col1, col2, col3 = st.sidebar.columns(3)
 with col1:
     Section_Type = st.radio('Section Type', ('Rectangle', 'Circle'), horizontal = True, label_visibility = 'collapsed')
 with col2:
     if "Rectangle" in Section_Type:
-        b = 400.
-        b = st.number_input(':green[$b$ [mm]]', min_value = 0.1, value = b, step = 1., format = '%f')
-        
+        b = st.number_input(':green[$b$ [mm]]', min_value = 0.1, value = 400., step = 10., format = '%f')
     else:
-        st.write('tt')
+        D = st.number_input(':green[$D$ [mm]]', min_value = 0.1, value = 500., step = 10., format = '%f')
+with col3:
+    if "Rectangle" in Section_Type:
+        d = st.number_input(':green[$d$ [mm]]', min_value = 0.1, value = 400., step = 10., format = '%f')
+
+print((1).__add__(2))
+fig, ax = plt.subplots()
+
+fruits = ['apple', 'blueberry', 'cherry', 'orange']
+counts = [fck, fy, ffu, Es]
+bar_labels = ['red', 'blue', '_red', 'orange']
+bar_colors = ['tab:red', 'tab:blue', 'tab:red', 'tab:orange']
+
+ax.bar(fruits, counts, label=bar_labels, color=bar_colors)
+
+ax.set_ylabel('fruit supply')
+ax.set_title('Fruit supply by kind and color')
+ax.legend(title='Fruit color')
+st.pyplot(fig)
 
 
-
-
-
+d = 4
+print(d)
 print(fck*0.1)
 # st.help(time)
 
@@ -74,32 +90,9 @@ with st.expander("See explanation"):
 # st.sidebar.header('Design Code')
 
 
-
-# 타이틀 적용 예시
-st.title('이것은 타이틀 입니다')
-
-# 특수 이모티콘 삽입 예시
-# emoji: https://streamlit-emoji-shortcodes-streamlit-app-gwckff.streamlit.app/
-st.title('스마일 :sunglasses:')
-
-# Header 적용
-st.header('헤더를 입력할 수 있어요! :sparkles:')
-
-# Subheader 적용
-st.subheader('이것은 subheader 입니다 :star2:')
-
 # 캡션 적용
 st.caption('캡션을 한 번 넣어 봤습니다')
 
-# 코드 표시
-sample_code = '''
-def function():
-    print('hello, world')
-'''
-st.code(sample_code, language="python")
-
-# 일반 텍스트
-st.text('일반적인 텍스트를 입력')
 
 # 마크다운 문법 지원
 st.markdown('streamlit은 **마크다운 문법을 지원**합니다.')

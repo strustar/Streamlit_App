@@ -117,46 +117,47 @@ class In:
 In.dia = dia;  In.RC_Code = RC_Code
 
 # Plot
-plt.style.use('default')
-# plt.style.use('dark_background')
-# plt.style.use('ggplot')
-fx = 6;  r = 1.;  fy = r*fx  # 13in.*23in. (27in.)
-plt.rcParams['figure.figsize'] = (fx, fy)
-# plt.rcParams['figure.dpi'] = 5
+plt.style.use('default')  # 'dark_background'
+fx = 6
+plt.rcParams['figure.figsize'] = (fx, fx)  # 13in.*23in. (27in. Monitor 모니터)
+# plt.rcParams['figure.dpi'] = 200
 
 # plt.rcParams['figure.facecolor'] = 'gainsboro'
 # plt.rcParams['axes.facecolor'] = 'green'
 # plt.rcParams['font.size'] = 12
 # print(plt.style.available)
 
-col1, col2 = st.columns([1, 1.8])
-# col1, col2, col3 = st.columns([1.5, 1, 1.5])
+col1, col2, col3 = st.columns([1.4, 1, 1.4])
 with col1:
-    fig, ax = plt.subplots(figsize = (fx, 2*fy))
+    fig, ax = plt.subplots() #(figsize = (5, 5))
     # plt.axis('off')
     plt.axis('equal')
-    ax.add_patch(patches.Circle((20, 30), 30, color = 'blue'))
-    ax.set(xlim = (0, 100), ylim = (0, 1*100))
+    ax.add_patch(patches.Circle((20, 30), 10, color = 'blue'))
+    ax.set(xlim = (0, 100), ylim = (0, 100))
     # ax.set_xlabel('Performance', fontsize = 12)
     ax.set_xlabel('Performance')
     ax.set_ylabel('Performance')
-    
+
     xmin, xmax, ymin, ymax = plt.axis()
     print(fig)
     st.pyplot(fig)
     st.write('# Example here #')
 with col2:
-    fig, ax = plt.subplots(figsize = (fx, 0.5*fy))
-    # plt.axis('off')
+    fig, ax = plt.subplots(figsize = (fx, 2.2*fx))
+    plt.axis('off')
     plt.axis('equal')
-    ax.set(xlim = (0, 100), ylim = (0, 1*100))
-    ax.add_patch(patches.Rectangle((50, 50), 50, 40, color = 'green'))
-    ax.add_patch(patches.Circle((20, 30), 30, color = 'blue'))
+    ax.set(xlim = (0, 100), ylim = (0, 2.2*100))
+    plt.plot([10, fck])
+    # lines.Line2D([1., 2., 30.], [10., 20.],  linewidth = 3.)
+    ax.add_patch(patches.Rectangle((50, 50), 50, 50, color = 'green'))
+    ax.add_patch(patches.Circle((20, 30), 10, color = 'blue'))
+    plt.plot([50, fy])
     print(fig)
     st.pyplot(fig)
 
 
 print(fig.dpi,'dpi')
+print(plt.rcParams['figure.dpi'], plt.rcParams['figure.figsize'])
 # creating a DataFrame
 df = pd.DataFrame(
     np.random.randn(5, 10),
@@ -164,10 +165,8 @@ df = pd.DataFrame(
 
 # displaying the DataFrame
 dd = df.style.highlight_max(axis = 0, color = 'red').set_caption('테스트 이니').format(precision=2)
-st.dataframe(dd)
-# st.write(dd)
-
-print(plt.rcParams['figure.dpi'], plt.rcParams['figure.figsize'])
+selected_row = st.dataframe(dd)
+print(selected_row)
 
 
 # 캡션 적용

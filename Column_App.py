@@ -11,6 +11,7 @@ import matplotlib.patches as patches
 # -- Set page config
 # emoji: https://streamlit-emoji-shortcodes-streamlit-app-gwckff.streamlit.app/
 st.set_page_config(page_title = "P-M Diagram", page_icon = ":star2:", layout = "wide",    # centered, wide
+# st.set_page_config(page_title = "P-M Diagram", page_icon = ":star2:", layout = "centered",    # centered, wide
     menu_items = {
         'Get Help': 'https://www.extremelycoolapp.com/help',
         'Report a bug': "https://www.extremelycoolapp.com/bug",
@@ -128,13 +129,15 @@ plt.rcParams['figure.figsize'] = (fx, fy)
 # plt.rcParams['font.size'] = 12
 # print(plt.style.available)
 
-col1, col2, col3 = st.columns([1.5, 1, 1.5])
+col1, col2 = st.columns([1, 1.8])
+# col1, col2, col3 = st.columns([1.5, 1, 1.5])
 with col1:
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize = (fx, 2*fy))
     # plt.axis('off')
     plt.axis('equal')
-    ax.add_patch(patches.Circle((20, 30), 30, color = 'blue'))    
-    ax.set(xlim = (0, 100), ylim = (0, r*100))
+    ax.add_patch(patches.Circle((20, 30), 30, color = 'blue'))
+    ax.set(xlim = (0, 100), ylim = (0, 1*100))
+    # ax.set_xlabel('Performance', fontsize = 12)
     ax.set_xlabel('Performance')
     ax.set_ylabel('Performance')
     
@@ -143,15 +146,17 @@ with col1:
     st.pyplot(fig)
     st.write('# Example here #')
 with col2:
-    fig, ax = plt.subplots(figsize = (fx, 1*fy))
-    plt.axis('off')
+    fig, ax = plt.subplots(figsize = (fx, 0.5*fy))
+    # plt.axis('off')
     plt.axis('equal')
     ax.set(xlim = (0, 100), ylim = (0, 1*100))
     ax.add_patch(patches.Rectangle((50, 50), 50, 40, color = 'green'))
     ax.add_patch(patches.Circle((20, 30), 30, color = 'blue'))
     print(fig)
     st.pyplot(fig)
-    
+
+
+print(fig.dpi,'dpi')
 # creating a DataFrame
 df = pd.DataFrame(
     np.random.randn(5, 10),

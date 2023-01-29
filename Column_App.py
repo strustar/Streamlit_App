@@ -1,10 +1,12 @@
 # import os
 # os.system('cls')
 import streamlit as st
-import time
+# import time
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.lines as lines
+import matplotlib.patches as patches
 
 # -- Set page config
 # emoji: https://streamlit-emoji-shortcodes-streamlit-app-gwckff.streamlit.app/
@@ -18,7 +20,7 @@ st.set_page_config(page_title = "P-M Diagram", page_icon = ":star2:", layout = "
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Sidebar setting ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 st.sidebar.markdown('## :blue[Design Code] ##')
 col1, col2 = st.sidebar.columns([1,1], gap = "small")
-with col1:    
+with col1:
     RC_Code = st.selectbox(':green[RC Code]', ('KCI-2012', 'KDS-2021'))
 with col2:
     FRP_Code = st.selectbox(':green[FRP Code]', ('AASHTO-2018', 'ACI 440.1R-06(15)', 'ACI 440.11-22'))
@@ -102,55 +104,69 @@ with st.expander("왼쪽 사이드바(sidebar)를 적당한 크기로 하시고,
     st.write("#### :blue[Edge browser : 설정 >> 브라우저 디스플레이 (다크모드로 변경)] ####")
     st.write("#### :blue[Chrome browser : 설정 >> 모양 (다크모드로 변경)] ####")
 
-# __name__
-dia = dia1
+# Input 변수 설정
+dia = np.array([dia1])
 if Layer == 2:
-    dia = [dia1, dia2]
+    dia = np.array([dia1, dia2])
 if Layer == 3:
-    dia = [dia1, dia2, dia3]
+    dia = np.array([dia1, dia2, dia3])
 
 class In:
-    dia = 0
+    pass
+In.dia = dia;  In.RC_Code = RC_Code
 
-In1 = In()
-# In.dia = dia
+# Plot
+plt.style.use('default')
+# plt.style.use('dark_background')
+# plt.style.use('ggplot')
+fx = 6;  r = 1.;  fy = r*fx  # 13in.*23in. (27in.)
+plt.rcParams['figure.figsize'] = (fx, fy)
+# plt.rcParams['figure.dpi'] = 5
 
-a = [dia, RC_Code, b, h]
-print(In.dia)
+# plt.rcParams['figure.facecolor'] = 'gainsboro'
+# plt.rcParams['axes.facecolor'] = 'green'
+# plt.rcParams['font.size'] = 12
+# print(plt.style.available)
 
-fig, ax = plt.subplots()
+col1, col2, col3 = st.columns([1.5, 1, 1.5])
+with col1:
+    fig, ax = plt.subplots()
+    # plt.axis('off')
+    plt.axis('equal')
+    ax.add_patch(patches.Circle((20, 30), 30, color = 'blue'))    
+    ax.set(xlim = (0, 100), ylim = (0, r*100))
+    ax.set_xlabel('Performance')
+    ax.set_ylabel('Performance')
+    
+    xmin, xmax, ymin, ymax = plt.axis()
+    print(fig)
+    st.pyplot(fig)
+    st.write('# Example here #')
+with col2:
+    fig, ax = plt.subplots(figsize = (fx, 1*fy))
+    plt.axis('off')
+    plt.axis('equal')
+    ax.set(xlim = (0, 100), ylim = (0, 1*100))
+    ax.add_patch(patches.Rectangle((50, 50), 50, 40, color = 'green'))
+    ax.add_patch(patches.Circle((20, 30), 30, color = 'blue'))
+    print(fig)
+    st.pyplot(fig)
+    
+# creating a DataFrame
+df = pd.DataFrame(
+    np.random.randn(5, 10),
+    columns=('col %d' % i for i in range(10)))
 
-fruits = ['apple', 'blueberry', 'cherry', 'orange']
-counts = [ffu, 200, 30, 1e2]
-if 'KDS' in RC_Code:
-    counts = [50, 20, 30, 75]
+# displaying the DataFrame
+dd = df.style.highlight_max(axis = 0, color = 'red').set_caption('테스트 이니').format(precision=2)
+st.dataframe(dd)
+# st.write(dd)
 
-bar_labels = ['red', 'blue', '_red', 'orange']
-bar_colors = ['tab:red', 'tab:blue', 'tab:red', 'tab:orange']
-
-ax.bar(fruits, counts, label=bar_labels, color=bar_colors)
-
-ax.set_ylabel('fruit supply')
-ax.set_title('Fruit supply by kind and color')
-ax.legend(title='Fruit color')
-
-
-st.pyplot(fig)
-
-
-d = 4
-print(d)
-
-
-#st.empty()
-
-# st.sidebar.markdown('##### Design **_Code_** :red[colored red] #####')
-# st.sidebar.header('Design Code')
+print(plt.rcParams['figure.dpi'], plt.rcParams['figure.figsize'])
 
 
 # 캡션 적용
 st.caption('캡션을 한 번 넣어 봤습니다')
-
 
 # 마크다운 문법 지원
 st.markdown('streamlit은 **마크다운 문법을 지원**합니다.')

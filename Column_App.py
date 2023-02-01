@@ -105,8 +105,10 @@ import PM_Cal
 
 In.Reinforcement_Type = 'RC'
 PM_Cal.Cal(In, PM)
+In.Reinforcement_Type = 'FRP'
+PM_Cal.Cal(In, PM)
 # print(PM.eta, PM.beta1, PM.alpha, PM.phi0)
-# In.Reinforcement_Type = 'FRP'
+
 
 # [i for i in [1, 2, 3]]
 # sample = 3

@@ -1,7 +1,8 @@
+import numpy as np
+import pandas as pd
+import streamlit as st
+
 def Cal(In, PM):
-    import numpy as np
-    import pandas as pd
-    import streamlit as st
     ### Input Data ###
     Reinforcement_Type = In.Reinforcement_Type
     [RC_Code, FRP_Code, Column_Type, Section_Type] = [In.RC_Code, In.FRP_Code, In.Column_Type,  In.Section_Type]
@@ -20,8 +21,7 @@ def Cal(In, PM):
         if fck > 40:
             n = 1.2 + 1.5*((100 - fck)/60)**4
             ep_co = 0.002 + (fck - 40)/1e5
-            ep_cu = 0.0033 - (fck - 40)/1e5
-        
+            ep_cu = 0.0033 - (fck - 40)/1e5        
         if n >= 2: n = 2
         n = round(n*100)/100
         
@@ -35,7 +35,6 @@ def Cal(In, PM):
         beta1 = 2*beta;  eta = alpha/beta1;  eta = round(eta*100)/100
         if fck == 50: eta = 0.97
         if fck == 80: eta = 0.87
-
     else:  #if strncmpi(RC_Code,'KCI-2012',3) == 1  ||  strncmpi(FRP_Code,'AASHTO-2018',3) == 1
         [ep_cu, eta] = [0.003, 1.]
         beta1 = 0.85 if fck <= 28 else 0.85 - 0.007*(fck - 28)        
@@ -72,7 +71,7 @@ def Cal(In, PM):
                 Asi[L, 0] = nb[L]*Ast[L]/nst[L]
                 Asi[L, ni[L]-1] = Asi[L, 0]
             elif 'Circle' in Section_Type:
-                r, theta = D/2 - dc[L], i*2*np.pi/nst[L]                
+                [r, theta] = [D/2 - dc[L], i*2*np.pi/nst[L]]
                 dsi[L, i] = D/2 - r*np.cos(theta)
                 Asi[L, i] = 2*Ast[L]/nst[L]
                 Asi[L, 0] = Ast[L]/nst[L]
@@ -97,13 +96,37 @@ def Cal(In, PM):
 
     ### Calculation Point C(3-1), D(4-1) (Zero Tension, Balacne Point) and E(5) &&  Z = eps/ep_cu  0.1~9.1?
     for zz in [1, 2]:
-        zz1, zz2 = 3-1, 5-1
+        [zz1, zz2] = [3-1, 5-1]
         if zz == 2:
-            zz1, zz2 = 1-1, 91-1
-            for z1 in range(zz1, zz2+1):
-                if'FRP' in Reinforcement_Type and 'ACI 440.1' in FRP_Code:    # for ACI 440.1**
-                    xb = d*ep_cu/(ep_cu + ep_fu)  # (xb <= x <= d & d < x <=h)
-        
+            [zz1, zz2] = [0, 90]
+        for z1 in range(zz1, zz2+1):
+            [ep_si, fsi] = [np.zeros((Layer, max(ni))), np.zeros((Layer, max(ni)))]            
+            if 'FRP' in Reinforcement_Type and 'ACI 440.1' in FRP_Code:             ############# for ACI 440.1**
+                xb = d*ep_cu/(ep_cu + ep_fu)  # (xb <= x <= d & d < x <=h)
+                if zz == 1:
+                    if z1 == 3-1: x = d                               # C x = d    Zero Tension (ep_s(end) = 0)
+                    if z1 == 4-1: x = xb                              # D x = xb   Balance Point (ep_t = ep_fu)
+                    if z1 == 5-1: x = d*ep_cu/(ep_cu + 0.8*ep_fu)     # E x = 0.8*xb (ep_t = 0.8*ep_fu)
+                else:
+                    # x = xb + (z1 - 1)*(d - xb)/(zz2 - 1)
+                    x = xb + z1*(d - xb)/zz2
+
+                [alp, c] = [x/d, x]
+                if 'Rectangle' in Section_Type:
+                    Cc = 0.85*alp*beta1*gamma*fck*b*h;                      Lc = (1 - alp*beta1*gamma)*h/2
+                    T1 = (1 - alp)/alp*ep_cu*Ef*A1;                         L1 = (2*gamma - 1)*h/2
+                    T2 = gamma/(2*gamma - 1)*(1 - alp)**2/alp*ep_cu*Ef*A2;  L2 = (2/3*(2 + alp)*gamma - 1)*h/2
+                    P = (Cc - T1 - T2)/1e3;                                 M = (Cc*Lc + T1*L1 + T2*L2)/1e6
+                elif 'Circle' in Section_Type:
+                    [P, M] = ACI440_Circle(alp, beta1, gamma, fck, ep_cu, Ef, Ast, D)
+                    # print(P, M)
+
+                for L in range(Layer):
+                    for i in range(ni[L]):
+                        ep_si[L, i] = ep_cu*(c - dsi[L, i])/c
+                        fsi[L, i] = Es*ep_si[L,i]
+            else:                                                                   ############# for AASHTO & RC
+                pass
 
         
         print(zz2)
@@ -113,8 +136,8 @@ def Cal(In, PM):
 
     ### %%% Calculation Point x = c = 0(8) : for Only ACI 440.1
     # if strncmpi(Reinforcement,'FRP',3) == 1  &&  strncmpi(FRP_Code,'ACI 440.1',9) == 1  % for ACI 440.1R**
-    #     M = (2*gamma - 1)^2/(2*gamma) *(A1 + A2/3)*f_fu*hD;
-    #     if strncmpi(Section, 'Circle', 3) == 1;  M = (2*gamma - 1)^2/(8*gamma) *sum(Ast)*f_fu*hD;  end
+    #     M = (2*gamma - 1)**2/(2*gamma) *(A1 + A2/3)*f_fu*hD;
+    #     if strncmpi(Section, 'Circle', 3) == 1;  M = (2*gamma - 1)**2/(8*gamma) *sum(Ast)*f_fu*hD;  end
     #     z1 = 8;  cc(z1) = 0;  Pn(z1) =-sum(Ast)/(2*gamma)*f_fu/1e3;  Mn(z1) = M/1e6;
     #     ee(z1) = Mn(z1)/Pn(z1)*1e3;  ep_s(z1,1:2) =-ep_y;  fs(z1,1:2) =-fy;
     # end
@@ -130,6 +153,7 @@ def Cal(In, PM):
     # displaying the DataFrame
     # df = df.style.highlight_max(axis = 0, color = 'red').set_caption('tsfasd').format(precision=2)
     st.dataframe(df)
+    st.write('# Pylance : vs code 확장팩 설치')
         
 
 
@@ -140,4 +164,22 @@ def Cal(In, PM):
     PM.Ag = Ag;  PM.Ast = Ast;  PM.nst = nst;  PM.dsi = dsi;  PM.hD = hD;  PM.rho = rho
 
     # return PM
+    
+def ACI440_Circle(alp, beta1, gamma, fck, ep_cu, Ef, Ast, D):
+    t = np.arccos(1 - 2*alp*beta1*gamma)
+    if t < 0 or t > np.pi: print(t)
+    Cc = 0.85*fck*(t - np.sin(t)*np.cos(t))*D**2/4
+    Mc = 0.85*fck*(np.sin(t))**3*D**3/12
+
+    t = np.arccos((1 - 2*alp*gamma)/(2*gamma - 1))
+    if t < 0  or  t > np.pi:  print(t)
+    if np.iscomplex(t) or  np.abs(t - np.pi) < 1e-2:   # if np.abs(t - np.pi) < 1e-2:  T = 0;  Mt = 0
+        [T, Mt] = [0, 0]
+    else:
+        T = (np.pi*np.cos(t) - t*np.cos(t) + np.sin(t))/(np.pi*(1 + np.cos(t))) *(1 - alp)/alp *ep_cu*Ef*Ast.sum();
+        Mt = (np.pi - t + np.sin(t)*np.cos(t))/(2*np.pi*(1 + np.cos(t))) *(1 - alp)/alp *(gamma - 1/2) *ep_cu*Ef*Ast.sum()*D;
+    
+    [P, M] = [(Cc - T)/1e3, (Mc + Mt)/1e6]
+    return P, M
+    
 

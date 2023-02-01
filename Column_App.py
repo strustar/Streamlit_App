@@ -18,7 +18,7 @@ st.set_page_config(page_title = "P-M Diagram", page_icon = ":star2:", layout = "
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Sidebar setting ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 st.sidebar.markdown('## :blue[Design Code] ##')
-col1, col2 = st.sidebar.columns([1,1], gap = "small")
+[col1, col2] = st.sidebar.columns([1,1], gap = "small")
 with col1:
     RC_Code = st.selectbox(':green[RC Code]', ('KCI-2012', 'KDS-2021'))
 with col2:
@@ -29,7 +29,7 @@ st.sidebar.markdown('## :blue[Column Type] ##')
 Column_Type = st.sidebar.radio('Column Type', ('Tied Column', 'Spiral Column'), horizontal = True, label_visibility = 'collapsed')
 
 st.sidebar.markdown('## :blue[Material Properties] ##')
-col1, col2, col3 = st.sidebar.columns(3)
+[col1, col2, col3] = st.sidebar.columns(3)
 with col1:
     fck = st.number_input(':green[$f_{ck}$ [MPa]]', min_value = 0.1, value = 28.0, step = 1., format = '%f')
     Ec = st.number_input(':green[$E_{c}$ [GPa]]', min_value = 0.1, value = 30.0, step = 1., format = '%f', disabled = True)    
@@ -41,8 +41,8 @@ with col3:
     Ef = st.number_input(':green[$E_{f}$ [GPa]]', min_value = 0.1, value = 45.0, step = 1., format = '%f')
 
 st.sidebar.markdown('## :blue[Section Type] ##')
-col1, col2, col3 = st.sidebar.columns(3)
-b, h, D = [], [], []
+[col1, col2, col3] = st.sidebar.columns(3)
+[b, h, D] = [[], [], []]
 with col1:
     Section_Type = st.radio('Section Type', ('Rectangle', 'Circle'), horizontal = True, label_visibility = 'collapsed')
 with col2:
@@ -61,22 +61,24 @@ elif 'Layer 2' in Layer: Layer = 2
 elif 'Layer 3' in Layer: Layer = 3
 
 col = st.sidebar.columns(3)
-# dia = np.array([])
-dia, dc, nh, nb, nD = [], [], [], [], []
-# dia = []; dc = []; nh = []; nb = []; nD = []
+[dia, dc, nh, nb, nD] = [[], [], [], [], []]   # dia = []; dc = []; nh = []; nb = []; nD = []
 for i in range(Layer):
     with col[i]:
         dia.append(st.number_input(':green[dia [mm]]', min_value = 0.1, value = 19.1, step = 1., format = '%f', help = '보강재 직경'+str(i+1)))
-        dc.append(st.number_input(':green[dc [mm]]', min_value = 0.1, value = 59.1 + 40*i, step = 1., format = '%f', help = '피복 두께'+str(i+1)))
+        if i == 0:
+            dc.append(st.number_input(':green[dc [mm]]', min_value = 0.1, value = 59.1 + 40*i, step = 1., format = '%f', help = '피복 두께'+str(i+1)))
+        elif i > 0:
+            dc.append(st.number_input(':green[dc [mm]]', min_value = dc[i-1], value = 59.1 + 40*i, step = 1., format = '%f', help = '피복 두께'+str(i+1)))
+
         if "Rectangle" in Section_Type:
-            nh.append(st.number_input(':green[nh [EA]]', min_value = 1, value = 3, step = 1, format = '%d', help = 'h방향 보강재 개수'+str(i+1)))
-            nb.append(st.number_input(':green[nb [EA]]', min_value = 1, value = 3, step = 1, format = '%d', help = 'b방향 보강재 개수'+str(i+1)))
+            nh.append(st.number_input(':green[nh [EA]]', min_value = 2, value = 3, step = 1, format = '%d', help = 'h방향 보강재 개수'+str(i+1)))
+            nb.append(st.number_input(':green[nb [EA]]', min_value = 2, value = 3, step = 1, format = '%d', help = 'b방향 보강재 개수'+str(i+1)))
         else:
-            nD.append(st.number_input(':green[nD [EA]]', min_value = 1, value = 8, step = 1, format = '%d', help = '원형 단면 총 보강재 개수'+str(i+1)))
-dia, dc, nh, nb, nD = np.array(dia), np.array(dc), np.array(nh), np.array(nb), np.array(nD)
+            nD.append(st.number_input(':green[nD [EA]]', min_value = 2, value = 8, step = 1, format = '%d', help = '원형 단면 총 보강재 개수'+str(i+1)))
+[dia, dc, nh, nb, nD] = [np.array(dia), np.array(dc), np.array(nh), np.array(nb), np.array(nD)]
 
 st.sidebar.markdown('## :blue[Load Case (LC)] ##')
-col1, col2, col3 = st.sidebar.columns(3)
+[col1, col2, col3] = st.sidebar.columns(3)
 with col1:
     Pu = st.number_input(':green[$P_{u}$ [kN]]', min_value = 10., value = 1500.0, step = 100., format = '%f')
 with col2:
@@ -94,10 +96,10 @@ class In:
 class PM:
     pass
 # In.RC_Code = RC_Code;  In.FRP_Code = FRP_Code;  In.Column_Type = Column_Type;  In.Section_Type = Section_Type
-In.RC_Code, In.FRP_Code, In.Column_Type,  In.Section_Type = RC_Code, FRP_Code, Column_Type, Section_Type
-In.fck, In.fy, In.ffu, In.Ec, In.Es, In.Ef = fck, fy, ffu, Ec, Es, Ef
-In.b, In.h, In.D = b, h, D
-In.Layer, In.dia, In.dc, In.nh, In.nb, In.nD = Layer, dia, dc, nh, nb, nD
+[In.RC_Code, In.FRP_Code, In.Column_Type, In.Section_Type] = [RC_Code, FRP_Code, Column_Type, Section_Type]
+[In.fck, In.fy, In.ffu, In.Ec, In.Es, In.Ef] = [fck, fy, ffu, Ec, Es, Ef]
+[In.b, In.h, In.D] = [b, h, D]
+[In.Layer, In.dia, In.dc, In.nh, In.nb, In.nD] = [Layer, dia, dc, nh, nb, nD]
 import PM_Cal
 # print(In.nD, nh)
 

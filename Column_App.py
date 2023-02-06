@@ -26,9 +26,14 @@ with col2:
     FRP_Code = st.selectbox(':green[FRP Code]', ('AASHTO-2018', 'ACI 440.1R-06(15)', 'ACI 440.11-22'))
 
 # st.sidebar.markdown('---')
-st.sidebar.markdown('## :blue[Column Type] ##')
-Column_Type = st.sidebar.radio('Column Type', ('Tied Column', 'Spiral Column'), horizontal = True, label_visibility = 'collapsed')
-
+[col1, col2] = st.sidebar.columns(2)
+with col1:
+    st.markdown('## :blue[Column Type] ##')
+    Column_Type = st.radio('Column Type', ('Tied Column', 'Spiral Column'), horizontal = False, label_visibility = 'collapsed')
+with col2:
+    st.markdown('## :blue[PM Diagram Option] ##')
+    PM_Type = st.radio('PM Type', ('RC vs. FRP', 'Pn-Mn vs. Pd-Md'), horizontal = False, label_visibility = 'collapsed')
+    
 st.sidebar.markdown('## :blue[Material Properties] ##')
 [col1, col2, col3] = st.sidebar.columns(3)
 with col1:
@@ -91,37 +96,164 @@ with st.expander("왼쪽 사이드바(sidebar)를 적당한 크기로 하시고,
     st.write("#### :blue[Edge browser : 설정 >> 브라우저 디스플레이 (다크모드로 변경)] ####")
     st.write("#### :blue[Chrome browser : 설정 >> 모양 (다크모드로 변경)] ####")
 
-# Input, Output 변수 설정
-class In:
-    pass
-class PM:
-    pass
-# In.RC_Code = RC_Code;  In.FRP_Code = FRP_Code;  In.Column_Type = Column_Type;  In.Section_Type = Section_Type
+# Input 변수 설정
+class In: pass
 [In.RC_Code, In.FRP_Code, In.Column_Type, In.Section_Type] = [RC_Code, FRP_Code, Column_Type, Section_Type]
 [In.fck, In.fy, In.ffu, In.Ec, In.Es, In.Ef] = [fck, fy, ffu, Ec, Es, Ef]
 [In.b, In.h, In.D] = [b, h, D]
 [In.Layer, In.dia, In.dc, In.nh, In.nb, In.nD] = [Layer, dia, dc, nh, nb, nD]
 
-import PM_Cal
-###* creating a DataFrame   ####################################################
-# label = ['A (Pure Compression)', r"$b^{2}$", '$\sqrt{x^2+y^2}=1$', r'\sqrt{x^2+y^2}=1', '\alpha', '\u03C6 \u03BC', 'G', 'H']
-# index = ['A', r"$$b^{2}$$", '$\sqrt{x^2+y^2}=1$', r'\sqrt{x^2+y^2}=1', 'α', '$$x^2$$', '":green[$\sqrt{x^2+y^2}=1$]"', 'H']
-label = ['A (Pure Compression)', 'B (Minimum Eccentricity)', 'C', 'D', 'E', 'F', 'G']
-index = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
-In.Reinforcement_Type = 'RC';   R = PM_Cal.Cal(In, PM);
-dataR = pd.DataFrame({'Mn':R.Mn, 'Pn':R.Pn, 'c':R.c, 'e':R.e, '':label})
-In.Reinforcement_Type = 'FRP';  F = PM_Cal.Cal(In, PM);
-dataF = pd.DataFrame({'':label, 'Mn':F.Mn, 'Pn':F.Pn, 'c':F.c[0:7], 'e':F.e})
 
+###? Data Import   ####################################################
+import PM_Cal
+# label = ['A (Pure Compression)', r"$b^{2}$", '$\sqrt{x^2+y^2}=1$', r'\sqrt{x^2+y^2}=1', '\alpha', '\u03C6 \u03BC', 'G', 'H']
+label = ['A (Pure Compression)', 'B (Minimum Eccentricity)', 'C (Zero Tension)', 'D (Balance Point)', 'E (ε_t = 2.5ε_y or 0.8ε_fu)', 'F (Pure Moment)', 'G (Pure Tension)']
+index = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
+In.Reinforcement_Type = 'RC';  PM = PM_Cal.Cal(In);  R = PM()
+dataR = pd.DataFrame({'e':PM.e, 'c':PM.c, 'Pn':PM.Pn, 'Mn':PM.Mn, 'φ':PM.phi, 'Pd':PM.Pd, 'Md':PM.Md, '':label})
+In.Reinforcement_Type = 'FRP';  PM = PM_Cal.Cal(In);  F = PM()
+dataF = pd.DataFrame({'e':PM.e, 'c':PM.c, 'Pn':PM.Pn, 'Mn':PM.Mn, 'φ':PM.phi, 'Pd':PM.Pd, 'Md':PM.Md, '':label})
 # pd.set_option("display.precision", 1)
-# pd.options.display.float_format = '{:.2f}'.format
-# data = {'Mn':R.Mn, 'Pn':R.Pn, 'c':R.c, 'e':R.e}#, '':label, 'ee1':F.e, 'cc1':F.c, 'Pn1':F.Pn, 'Mn1':F.Mn}
-# pd.set_option('colheader_justify','center')
-df = pd.merge(dataR, dataF, on = '', suffixes = (' [RC]',''))
-df.style.format("\\textbf{{{}}}", escape="latex").to_latex()
+df = pd.merge(dataR, dataF, on = '', suffixes = (' ',''))
 df.index = index
-# df.to_latex(index = True)
-st.dataframe(df.style.set_precision(1).highlight_max(axis=0, color = 'green'), width = 800)
+###? Data Import   ####################################################
+# print(dataR.e)
+# print(dataR.columns[4])
+# print(dataR.index[4])
+
+
+###? Plot   ####################################################
+plt.style.use('default')  # 'dark_background'
+plt.style.use('classic')
+# plt.style.use("fast")
+# plt.style.available
+plt.rcParams['figure.figsize'] = (8, 6)  # 13in.*23in. (27in. Monitor 모니터)
+# plt.rcParams['figure.dpi'] = 200  # plt.rcParams['figure.facecolor'] = 'gainsboro' # plt.rcParams['axes.facecolor'] = 'green'
+plt.rcParams['font.size'] = 14
+
+def PM_plot(loc):    
+    if 'RC' in PM_Type:
+        if 'left' in loc:
+            PM_x1 = R.ZMn;  PM_y1 = R.ZPn;  PM_x2 = R.ZMd;  PM_y2 = R.ZPd;  PM_x7 = R.Mn;  PM_y7 = R.Pn;  PM_x8 = R.Md;  PM_y8 = R.Pd
+            st.write('### :blue[PM Diagram (RC : ' + RC_Code + ')] :sparkle:')
+            c1 = 'red';  c2 = 'green';  ls1 = '--';  ls2 = '-';  lb1 = r'$\rm P_n-M_n Diagram$';  lb2 = r'$\rm \phi P_n-\phi M_n Diagram$'
+        elif 'right' in loc:
+            PM_x1 = F.ZMn;  PM_y1 = F.ZPn;  PM_x2 = F.ZMd;  PM_y2 = F.ZPd;  PM_x7 = F.Mn;  PM_y7 = F.Pn;  PM_x8 = F.Md;  PM_y8 = F.Pd
+            st.write('### :blue[PM Diagram (FRP : ' + FRP_Code + ')] :sparkle:')
+            c1 = 'magenta';  c2 = 'cyan';  ls1 = '--';  ls2 = '-';  lb1 = r'$\rm P_n-M_n Diagram$';  lb2 = r'$\rm \phi P_n-\phi M_n Diagram$'
+    else:   ## elif 'Pn' in PM_Type:
+        if 'left' in loc:
+            PM_x1 = R.ZMn;  PM_y1 = R.ZPn;  PM_x2 = F.ZMn;  PM_y2 = F.ZPn;  PM_x7 = R.Mn;  PM_y7 = R.Pn;  PM_x8 = F.Mn;  PM_y8 = F.Pn
+            st.write('### :blue[Pn - Mn Diagram] :sparkle:')
+            c1 = 'red';  c2 = 'magenta';  ls1 = '--';  ls2 = '--';  lb1 = RC_Code + ' (RC)';  lb2 = FRP_Code + ' (FRP)'
+        elif 'right' in loc:
+            PM_x1 = R.ZMd;  PM_y1 = R.ZPd;  PM_x2 = F.ZMd;  PM_y2 = F.ZPd;  PM_x7 = R.Md;  PM_y7 = R.Pd;  PM_x8 = F.Md;  PM_y8 = F.Pd
+            st.write('### :blue[Pd - Md Diagram] :sparkle:')
+            c1 = 'green';  c2 = 'cyan';  ls1 = '-';  ls2 = '-';  lb1 = RC_Code + ' (RC)';  lb2 = FRP_Code + ' (FRP)'
+
+    fig, ax = plt.subplots()
+    ax.set_xlabel(r'$\rm M_{n}$ or $\rm \phi M_{n}$ [kN$\cdot$m]', fontdict = {'size': 16})
+    ax.set_ylabel(r'$\rm P_{n}$ or $\rm \phi P_{n}$ [kN]', fontdict = {'size': 16})
+    r = 1.15;  xmax = r*np.max(PM_x1);  ymin = 1.25*np.min([np.min(PM_y1), np.min(PM_y2)]);  ymax = r*np.max(PM_y1)
+    ax.set(xlim = (0, xmax), ylim = (ymin, ymax))    
+    
+    for i in [1, 2]:      # x, y ticks
+        if i == 1: [mx, mn] = [xmax, 0]
+        if i == 2: [mx, mn] = [ymax, ymin]
+        n = len(str(round(mx-mn)))        # 숫자의 자리수 확인
+        r = 10 if n <= 3 else 10**(n-2)   # 9는 표시될 tick의 수 (8~10)
+        s = np.ceil((mx-mn)/9/r)*r
+        if i == 1: ax.set_xticks(np.arange(0, xmax, s))
+        if i == 2: ax.set_yticks(np.arange(s*(ymin//s), ymax, s))
+
+    [lw1, lw2] = [1.2, 2.]
+    ax.plot([0, xmax],[0, 0], linewidth = lw1, color = 'black')     # x축 (y축 = 0)
+    ax.plot(PM_x1,PM_y1, linewidth = lw2, color = c1, linestyle = ls1, label = lb1)
+    ax.plot(PM_x2,PM_y2, linewidth = lw2, color = c2, linestyle = ls2, label = lb2)    
+    ax.legend(loc = 'upper right', prop = {'size': 14})
+    ax.grid(linestyle = '--', linewidth = 0.2)
+    current_values = plt.gca().get_yticks()
+    plt.gca().set_yticklabels(['{:,.0f}'.format(x) for x in current_values])   # 천단위 (,)
+
+    # e_min(B), Zero Tension(C), e_b(D), phi*Pn(max)
+    if 'RC' in PM_Type:   #! PM_Type = RC 일때만 Only
+        if 'left' in loc:  [x2, y2, c] = [R.Md[2-1], R.Pd[2-1], 'green']
+        if 'right' in loc: [x2, y2, c] = [F.Md[2-1], F.Pd[2-1], 'cyan']
+        ax.plot([0, x2],[y2, y2], linewidth = lw2, color = c)  # phi*Pn(max)
+        txt = r'$\bf \phi P_{n(max)} =$' + str(round(y2, 1)) + 'kN'
+        ax.text(0, 0.95*y2, txt, ha = 'left', va = 'top')
+        
+        for i in range(1, 4):
+            if 'left' in loc:  [x, y] = [R.Mn[i], R.Pn[i]]
+            if 'right' in loc: [x, y] = [F.Mn[i], F.Pn[i]]
+            x1 = [0, x];  y1 = [0, y]
+            ax.plot(x1, y1, linewidth = lw1, color = 'black')
+
+            if 'left' in loc:  val = R.e[i]
+            if 'right' in loc: val = F.e[i]
+            ha ='left' if i == 3-1 else 'right'
+            c = 'blue' if val > 0 else 'red'
+            if i == 2-1:  txt = r'$\bf e_{min} =' + str(round(val, 1)) + 'mm$'
+            if i == 3-1:  txt = txt = r'$\bf e_{0} =' + str(round(val, 1)) + 'mm$'
+            if i == 4-1:  txt = r'$\bf e_{b} =' + str(round(val, 1)) + 'mm$'
+            ax.text(0.4*x, 0.4*y, txt, ha = ha, color = c, backgroundcolor = 'yellow')
+
+    print(fig)
+    st.pyplot(fig)
+
+
+col_left, col_center, col_right = st.columns([1.4, 1, 1.4])
+with col_left:
+    PM_plot('left')
+with col_right:
+    PM_plot('right')
+    
+with col_center:
+    fig, ax = plt.subplots(figsize = (8, 2.2*8))
+    # plt.axis('off')
+    # plt.axis('equal')
+    ax.set(xlim = (0, 100), ylim = (0, 2.2*100))
+    plt.plot([10, 50], [10, 50])
+    # lines.Line2D([1., 2., 30.], [10., 20.],  linewidth = 3.)
+    ax.add_patch(patches.Rectangle((50, 50), 50, 50, color = 'green'))
+    ax.add_patch(patches.Circle((20, 30), 10, color = 'blue'))
+    # plt.plot([50, 100])
+    print(fig)
+    st.pyplot(fig)
+
+
+# print(fig.dpi,'dpi')
+# print(plt.rcParams['figure.dpi'], plt.rcParams['figure.figsize'])
+###? Plot   ####################################################
+
+
+###? creating a DataFrame   ####################################################
+# pd.set_option('display.colheader_justify', 'center')
+def color_np_c(value, c1, c2):
+    if value < 0: color = c1
+    else:         color = c2
+    return "color: " + color
+
+st.dataframe(df.style.applymap(color_np_c, c1 = 'red', c2 = '', subset = pd.IndexSlice[['e ', 'c ', 'Pn ', 'Pd ', 'e', 'c', 'Pn', 'Pd']])
+                .format({'φ': '{:.3f}', 'φ ': '{:.3f}'}, precision = 1, thousands = ',')
+                .set_properties(**{'font-size': '150%', 'background-color': '', 'border-color': 'red', 'text-align': 'center'})
+                .set_properties(align = "center")
+                .set_table_styles([dict(selector='th', props=[('text-align', 'center')])])
+                # .set_table_styles([{'selector': 'tr:hover', 'props': [('background-color', 'yellow')]}])
+                ,width = 1100) #, use_container_width = True)
+
+
+# # hovering 미지원 streamlit
+# df = pd.DataFrame(np.random.randn(10, 4),
+#                 columns=['A', 'B', 'C', 'D'])
+# df = df.style.set_table_styles(
+#     [{'selector': 'tr:hover',
+#     'props': [('background-color', 'yellow')]}])
+# st.dataframe(df)
+# df
+
+# df = pd.DataFrame(k=1:3, delta = (1:3)/2)
+# row.names(df) <- c('$\\lambda$', "$\\mu$", "$\\pi$")
 # st.dataframe(df)
 # df = pd.DataFrame(dataF)
 # st.dataframe(df.style.set_precision(1).highlight_max(axis=0, color = 'green'))
@@ -136,19 +268,7 @@ st.dataframe(df.style.set_precision(1).highlight_max(axis=0, color = 'green'), w
 # df.head(10).style.set_properties(**{'background-color': 'black',                                                   
 #                                     'color': 'lawngreen',                       
 #                                     'border-color': 'white'})
-# df.head(10).style.format({"BasePay": "${:20,.0f}", 
-#                           "OtherPay": "${:20,.0f}", 
-#                           "TotalPay": "${:20,.0f}",
-#                           "TotalPayBenefits":"${:20,.0f}"})\
-#                  .format({"JobTitle": lambda x:x.lower(),
-#                           "EmployeeName": lambda x:x.lower()})\
-#                  .hide_index()\
-                    # .highlight_max(color='lightgreen')\                            
-                    # .highlight_min(color='#cd4f39')
-                    # .background_gradient(cmap='Blues'
-#                  .bar(subset=["OtherPay",], color='lightgreen')\
-#                  .bar(subset=["BasePay"], color='#ee1f5f')\
-#                  .bar(subset=["TotalPay"], color='#FFA07A')
+
 # df.apply(lambda x: x.max()-x.min())
 # df.applymap(lambda x: np.nan if x < 0 else x)
 # data = data.applymap(lambda x: x*10)
@@ -163,94 +283,16 @@ st.dataframe(df.style.set_precision(1).highlight_max(axis=0, color = 'green'), w
 # styles = [dict(selector = "thead th", props = [("font-size", "150%"), 
 #                                                ("text-align", "center"), 
 #                                                ("background-color", "#6DDBFC")])]
-# df.style.set_table_styles(styles)
-
 # def color_np_custom(value, c1, c2):
 #     if value < 0:
 #         color = c1
 #     else:
 #         color = c2
 #     return "color: " + color
-
 # df.style.applymap(color_np_custom, c1 = "#FF0000", c2 = "#0000BB")
 # df.style.applymap(color_np,
 #                   subset = pd.IndexSlice[[1, 2], ["B", "D"]])  # 스타이 부분 적용
-# def color_negative_red(val):
-#     color = 'red' if val < 0 else 'black'
-#  return 'color: %s' % color
-# df = pd.DataFrame(dict(col_1=[1.53,-2.5,3.53], 
-#                        col_2=[-4.1,5.9,0])
-#                  )
-# df.style.applymap(color_negative_red)
-
-###* creating a DataFrame   ####################################################
+###? creating a DataFrame   ####################################################
 
 
-
-# # Plot
-# plt.style.use('default')  # 'dark_background'
-# fx = 6
-# plt.rcParams['figure.figsize'] = (fx, fx)  # 13in.*23in. (27in. Monitor 모니터)
-# # plt.rcParams['figure.dpi'] = 200
-
-# plt.rcParams['figure.facecolor'] = 'gainsboro'
-# plt.rcParams['axes.facecolor'] = 'green'
-# plt.rcParams['font.size'] = 12
-# print(plt.style.available)
-
-# col1, col2, col3 = st.columns([1.4, 1, 1.4])
-# with col1:
-#     fig, ax = plt.subplots() #(figsize = (5, 5))
-#     # plt.axis('off')
-#     plt.axis('equal')
-#     ax.add_patch(patches.Circle((20, 30), 10, color = 'blue'))
-#     ax.set(xlim = (0, 100), ylim = (0, 100))
-#     # ax.set_xlabel('Performance', fontsize = 12)
-#     ax.set_xlabel('Performance')
-#     ax.set_ylabel('Performance')
-
-#     xmin, xmax, ymin, ymax = plt.axis()
-#     print(fig)
-#     st.pyplot(fig)
-#     st.write('# Example here #')
-# with col3:
-#     st.write('# Example here #')
-# with col2:
-#     fig, ax = plt.subplots(figsize = (fx, 2.2*fx))
-#     plt.axis('off')
-#     plt.axis('equal')
-#     ax.set(xlim = (0, 100), ylim = (0, 2.2*100))
-#     plt.plot([10, fck])
-#     # lines.Line2D([1., 2., 30.], [10., 20.],  linewidth = 3.)
-#     ax.add_patch(patches.Rectangle((50, 50), 50, 50, color = 'green'))
-#     ax.add_patch(patches.Circle((20, 30), 10, color = 'blue'))
-#     plt.plot([50, fy])
-#     print(fig)
-#     st.pyplot(fig)
-
-
-# print(fig.dpi,'dpi')
-# print(plt.rcParams['figure.dpi'], plt.rcParams['figure.figsize'])
-# # creating a DataFrame
-# df = pd.DataFrame(
-#     np.random.randn(5, 10),
-#     columns=('col %d' % i for i in range(10)))
-
-# # displaying the DataFrame
-# dd = df.style.highlight_max(axis = 0, color = 'red').set_caption('테스트 이니').format(precision=2)
-# st.dataframe(dd)
-# # print(selected_row)
-
-
-# # 캡션 적용
-# st.caption('캡션을 한 번 넣어 봤습니다')
-
-# 마크다운 문법 지원
-st.markdown('streamlit은 **마크다운 문법을 지원**합니다.')
-# 컬러코드: blue, green, orange, red, violet
-st.markdown("텍스트의 색상을 :green[초록색]으로, 그리고 **:blue[파란색]** 볼트체로 설정할 수 있습니다.")
-st.markdown(":green[$\sqrt{x^2+y^2}=1$] 와 같이 latex 문법의 수식 표현도 가능합니다 :pencil:")
-
-# LaTex 수식 지원
-st.latex(r'\sqrt{x^2+y^2}=1')
 

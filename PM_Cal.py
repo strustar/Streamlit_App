@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-def Cal(In, PM):
+def Cal(In):
     ###* Input Data ###
     Reinforcement_Type = In.Reinforcement_Type
     [RC_Code, FRP_Code, Column_Type, Section_Type] = [In.RC_Code, In.FRP_Code, In.Column_Type,  In.Section_Type]
@@ -25,8 +25,7 @@ def Cal(In, PM):
         if n >= 2: n = 2
         n = round(n*100)/100
         
-        alpha = 1 - 1/(1 + n)*(ep_co/ep_cu)
-        temp = 1/(1 + n)/(2 + n)*(ep_co/ep_cu)**2
+        alpha = 1 - 1/(1 + n)*(ep_co/ep_cu);  temp = 1/(1 + n)/(2 + n)*(ep_co/ep_cu)**2
         if fck <= 40: alpha = 0.8
         beta = 1 - (0.5 - temp)/alpha
         if fck <= 50: beta = 0.4
@@ -40,9 +39,8 @@ def Cal(In, PM):
         beta1 = 0.85 if fck <= 28 else 0.85 - 0.007*(fck - 28)        
         if beta1 < 0.65: beta1 = 0.65
     
-    [alpha, phi0] = [0.80, 0.65]
-    if 'Spiral' in Column_Type:
-        [alpha, phi0] = [0.85, 0.70]
+    if 'Tied' in Column_Type:   [alpha, phi0] = [0.80, 0.65]
+    if 'Spiral' in Column_Type: [alpha, phi0] = [0.85, 0.70]
     ###* Coefficient ###
 
     ###* Preparation for Calculation ###
@@ -109,7 +107,7 @@ def Cal(In, PM):
                     if z1 == 3-1: x = d                               # C x = d    Zero Tension (ep_s(end) = 0)
                     if z1 == 4-1: x = xb                              # D x = xb   Balance Point (ep_t = ep_fu)
                     if z1 == 5-1: x = d*ep_cu/(ep_cu + 0.8*ep_fu)     # E x = 0.8*xb (ep_t = 0.8*ep_fu)
-                else:
+                elif zz == 2:
                     # x = xb + (z1 - 1)*(d - xb)/(zz2 - 1)
                     x = xb + z1*(d - xb)/zz2
 
@@ -128,12 +126,12 @@ def Cal(In, PM):
                     if z1 == 3-1: eps = 0                                                       # C   0% fy or ffu  Zero Tension (ep_s(end) = 0)
                     if z1 == 4-1: eps = 1.00*ep_y                                               # D 100% fy or ffu  Balance Point
                     if z1 == 5-1: eps = 2.50*ep_y if 'RC' in Reinforcement_Type else 0.8*ep_y   # E 250% fy or 80% ffu                        
-                else:
+                elif zz == 2:
                     Z = z1/10;  eps = Z*ep_cu
 
                 c = d*ep_cu/(ep_cu + eps)
                 if 'Rectangle' in Section_Type: bhD = [hD, b, h]
-                elif 'Circle' in Section_Type: bhD = [hD, D]
+                elif 'Circle' in Section_Type:  bhD = [hD, D]
                 [P, M] = RC_and_AASHTO(Section_Type, Reinforcement_Type, beta1, c, eta, fck, Layer, ni, ep_si, ep_cu, dsi, fsi, Es, fy, Fsi, Asi, *bhD)
 
             if zz == 1:
@@ -187,20 +185,14 @@ def Cal(In, PM):
                     ep_si[L, i] = ep_cu*(c - dsi[L, i])/c
                     fsi[L, i] = Es*ep_si[L, i]
         else:                                                                       #############! for RC & AASHTO
-            tol = toler
-            k7 = 0
-            c = hD/2
+            tol = toler;  k7 = 0;  c = hD/2
             for k1 in np.arange(2, 1000):
-                # if z1 == 2-1: c = hD/2 + (k1 - 1)*hD/iter
-                # if z1 == 6-1: c = hD/100 + (k1 - 1)*hD/2/iter
                 if 'Rectangle' in Section_Type: bhD = [hD, b, h]
                 elif 'Circle' in Section_Type: bhD = [hD, D]
                 [P, M] = RC_and_AASHTO(Section_Type, Reinforcement_Type, beta1, c, eta, fck, Layer, ni, ep_si, ep_cu, dsi, fsi, Es, fy, Fsi, Asi, *bhD)
 
                 temp[k1] = Pnn - P
-                sgn1 = np.sign(temp[k1-1])
-                sgn2 = np.sign(temp[k1])
-                sgn = sgn1*sgn2
+                sgn1 = np.sign(temp[k1-1]);  sgn2 = np.sign(temp[k1]);  sgn = sgn1*sgn2
                 if sgn == -1: k7 = k7 + 1
                 c = c + sgn2*100/10**k7
                 if abs(temp[k1]) <= 1e-1: break
@@ -211,56 +203,68 @@ def Cal(In, PM):
     ###* Calculation Point B(2-1), F(6-1) : Minimum Eccentricity (e = min), Pure Moment(Pn = 0)
 
     ##* %%% Calculation Point x = c = 0(8-1) : for Only ACI 440.1    
-    if 'FRP' in Reinforcement_Type and 'ACI 440.1' in FRP_Code:    #! for ACI 440.1R**  Only Only      
+    if 'FRP' in Reinforcement_Type and 'ACI 440.1' in FRP_Code:    #! for ACI 440.1R**  Only Only   
         if 'Rectangle' in Section_Type: M = (2*gamma - 1)**2/(2*gamma) *(A1 + A2/3)*ffu*hD/1e6
         if 'Circle' in Section_Type:    M = (2*gamma - 1)**2/(8*gamma) *np.sum(Ast)*ffu*hD/1e6
         P = -np.sum(Ast)/(2*gamma)*ffu/1e3
         [Pn8, Mn8, Pd8, Md8] = [P, M, 0.55*P, 0.55*M]  # c = 0, ep_s = -ep_y, fs = -fy
     ##* %%% Calculation Point x = c = 0(8-1) : for Only ACI 440.1
 
-    ###*%% Sorting
-    # print(Reinforcement_Type)    
+    ###*%% Sorting    
     Ze = np.concatenate((ee, Zee));   Zc = np.concatenate((cc, Zcc));         ZPn = np.concatenate((Pn, ZPn))
     ZMn = np.concatenate((Mn, ZMn));  Zep_s = np.concatenate((ep_s, Zep_s));  Zfs = np.concatenate((fs, Zfs))
     loc = np.argsort(ZPn)
     Ze = Ze[loc][::-1];    Zc = Zc[loc][::-1];        ZPn = ZPn[loc][::-1]
     ZMn = ZMn[loc][::-1];  Zep_s = Zep_s[loc][::-1];  Zfs = Zfs[loc][::-1]
-    st.dataframe(Zep_s)
     ###*%% Sorting
     
-    ### 강도감소계수 (phi)        
-    if 'RC' in Reinforcement_Type:        #RC : KDS-2021 & KCI-2012
-        for zz in [1, 2]:
-            if zz == 1: temp = Pn
-            if zz == 2: temp = ZPn
-            phii = np.zeros(len(temp))
-            for z1 in range(len(temp)-1):
+    ### 강도감소계수 (phi)    
+    for zz in [1, 2]:
+        if zz == 1:
+            n = len(Pn);  phi = np.zeros(n)
+        elif zz == 2:
+            n = len(ZPn);  Zphi = np.zeros(n)
+        for z1 in range(n-1):
+            if zz == 1: eps = -ep_s[z1, 1]      # 압축 (+)
+            if zz == 2: eps = -Zep_s[z1, 1]
+            if 'RC' in Reinforcement_Type:                  #! RC : KDS-2021 & KCI-2012
                 [ep_tccl, ep_ttcl] = [ep_y, 0.005]
                 if fy >= 400: ep_ttcl = 2.5*ep_y
-                if zz == 1: eps = -ep_s[z1, 1]      # 압축 (+)
-                if zz == 2: eps = -Zep_s[z1, 1]
-                phii[z1] = phi0 + (eps - ep_tccl)*(0.85 - phi0)/(ep_ttcl - ep_tccl)
-                if eps <= ep_tccl: phii[z1] = phi0
-                if eps >= ep_ttcl: phii[z1] = 0.85                
-            # end;  phi(length(temp)) = 0.85;  phi_Status{length(temp)} = 'Tension Controlled';
-            # if zz == 1;  phi1 = phi;  phi_Status1 = phi_Status;  end
-            if zz == 1: phi = phii
-            if zz == 2: Zphi = phii
-            print(zz, phi)
+                ph = phi0 + (eps - ep_tccl)*(0.85 - phi0)/(ep_ttcl - ep_tccl)
+                if eps <= ep_tccl: ph = phi0
+                if eps >= ep_ttcl: ph = 0.85
+                
+            elif 'FRP' in Reinforcement_Type:               #! FRP : AASHTO & ACI  (ACI 440.1R**은 약간 다른데 거의 비슷해서 여기에 포함)
+                if 'AASHTO' in FRP_Code:
+                    a1 = 1.55;  a2 = 1;  a3 = 0.75
+                elif 'ACI 440.1' in FRP_Code:
+                    a1 = 1.05;  a2 = 0.5;  a3 = 0.65                
+                ph = a1 - a2*eps/ep_fu
+                if eps <= 0.8*ep_fu: ph = a3
+                if eps >= ep_fu: ph = 0.55
+            if zz == 1: phi[z1] = ph
+            if zz == 2: Zphi[z1] = ph    
+    if 'RC' in Reinforcement_Type:  [phi[-1], Zphi[-1]] = [0.85, 0.85]
+    if 'FRP' in Reinforcement_Type: [phi[-1], Zphi[-1]] = [0.55, 0.55]
     ### 강도감소계수 (phi)    
-    Pd = phi*Pn
-    Md = phi*Mn
+    Pd = phi*Pn;  Md = phi*Mn;  ZPd = Zphi*ZPn;  ZMd = Zphi*ZMn
 
+    class PM: pass
     PM.ep_y, PM.ep_fu, PM.ep_cu, = ep_y, ep_fu, ep_cu
     PM.beta1, PM.eta, PM.alpha, PM.phi0 = beta1, eta, alpha, phi0
     
     if 'Rectangle' in Section_Type: PM.A1, PM.A2 = A1, A2
     PM.Ag = Ag;  PM.Ast = Ast;  PM.nst = nst;  PM.dsi = dsi;  PM.hD = hD;  PM.rho = rho
-
+    
     PM.e = ee;  PM.c = cc;  PM.Pn = Pn;  PM.Mn = Mn;  PM.ep_s = ep_s;  PM.fs = fs
     PM.phi = phi;  PM.Pd = Pd;  PM.Md = Md
+    PM.Ze = Ze;  PM.Zc = Zc;  PM.ZPn = ZPn;  PM.ZMn = ZMn;  PM.Zep_s = Zep_s;  PM.Zfs = Zfs
+    PM.Zphi = Zphi;  PM.ZPd = ZPd;  PM.ZMd = ZMd
+    if 'FRP' in Reinforcement_Type and 'ACI 440.1' in FRP_Code:    #! for ACI 440.1R**  Only Only
+        PM.Pn8 = Pn8;  PM.Mn8 = Mn8;  PM.Pd8 = Pd8;  PM.Md8 = Md8
     return PM
-    
+
+
 def ACI440_Circle(alp, beta1, gamma, fck, ep_cu, Ef, Ast, D):
     t = np.arccos(1 - 2*alp*beta1*gamma)
     if t < 0 or t > np.pi: print('ACI440_Circle theta', t)
@@ -277,7 +281,8 @@ def ACI440_Circle(alp, beta1, gamma, fck, ep_cu, Ef, Ast, D):
     
     [P, M] = [(Cc - T)/1e3, (Mc + Mt)/1e6]
     return P, M
-    
+
+
 def ACI440_Rectangle(alp, beta1, gamma, fck, ep_cu, Ef, A1, A2, b, h):
     Cc = 0.85*alp*beta1*gamma*fck*b*h;                      Lc = (1 - alp*beta1*gamma)*h/2
     T1 = (1 - alp)/alp*ep_cu*Ef*A1;                         L1 = (2*gamma - 1)*h/2
@@ -285,6 +290,7 @@ def ACI440_Rectangle(alp, beta1, gamma, fck, ep_cu, Ef, A1, A2, b, h):
 
     [P, M] = [(Cc - T1 - T2)/1e3, (Cc*Lc + T1*L1 + T2*L2)/1e6]
     return P, M
+
 
 def RC_and_AASHTO(Section_Type, Reinforcement_Type, beta1, c, eta, fck, Layer, ni, ep_si, ep_cu, dsi, fsi, Es, fy, Fsi, Asi, *bhD):
     a = beta1*c
@@ -318,5 +324,4 @@ def RC_and_AASHTO(Section_Type, Reinforcement_Type, beta1, c, eta, fck, Layer, n
 
     [P, M] = [np.sum(Fsi) + Cc, (M + Cc*y_bar)/1e3]    # Mc =  Cc*y_bar
     return P, M
-
 

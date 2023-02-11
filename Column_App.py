@@ -104,7 +104,7 @@ class In: pass
 [In.Layer, In.dia, In.dc, In.nh, In.nb, In.nD] = [Layer, dia, dc, nh, nb, nD]
 
 
-###? Data Import   ####################################################
+###? Data Import  #############################################################################################################
 import PM_Cal
 # label = ['A (Pure Compression)', r"$b^{2}$", '$\sqrt{x^2+y^2}=1$', r'\sqrt{x^2+y^2}=1', '\alpha', '\u03C6 \u03BC', 'G', 'H']
 label = ['A (Pure Compression)', 'B (Minimum Eccentricity)', 'C (Zero Tension)', 'D (Balance Point)', 'E (ε_t = 2.5ε_y or 0.8ε_fu)', 'F (Pure Moment)', 'G (Pure Tension)']
@@ -116,44 +116,41 @@ dataF = pd.DataFrame({'e':PM.e, 'c':PM.c, 'Pn':PM.Pn, 'Mn':PM.Mn, 'φ':PM.phi, '
 # pd.set_option("display.precision", 1)
 df = pd.merge(dataR, dataF, on = '', suffixes = (' ',''))
 df.index = index
-###? Data Import   ####################################################
-# print(dataR.e)
-# print(dataR.columns[4])
-# print(dataR.index[4])
+
+if 'FRP' in In.Reinforcement_Type and 'ACI 440.1' in FRP_Code:    #! for ACI 440.1R**  Only Only
+    F.ZPn = np.insert(F.ZPn, -1, F.Pn8);  F.ZMn = np.insert(F.ZMn, -1, F.Mn8)
+    F.ZPd = np.insert(F.ZPd, -1, F.Pd8);  F.ZMd = np.insert(F.ZMd, -1, F.Md8)
+    F.Pn = np.append(F.Pn, F.Pn8);  F.Mn = np.append(F.Mn, F.Mn8)
+    F.Pd = np.append(F.Pd, F.Pd8);  F.Md = np.append(F.Md, F.Md8)
+###? Data Import  #############################################################################################################
 
 
-###? Plot   ####################################################
-plt.style.use('default')  # 'dark_background'
-plt.style.use('classic')
-# plt.style.use("fast")
-# plt.style.available
-plt.rcParams['figure.figsize'] = (8, 6)  # 13in.*23in. (27in. Monitor 모니터)
-# plt.rcParams['figure.dpi'] = 200  # plt.rcParams['figure.facecolor'] = 'gainsboro' # plt.rcParams['axes.facecolor'] = 'green'
-plt.rcParams['font.size'] = 14
-
-def PM_plot(loc):    
+###? Plot  #############################################################################################################
+###! PM_plot function   ###################
+fs = 12
+def PM_plot(loc):
+    txt1 = r'$P_n-M_n$ Diagram';  txt2 = r'$\phi P_n-\phi M_n$ Diagram'  # txt2 = r'$P_d-M_d$ Diagram'
+    txt3 = RC_Code + ' (RC)';     txt4 = FRP_Code + ' (FRP)'
+    # st.markdown("<h3 style='text-align: center; color: red;'> Some title</h3>", unsafe_allow_html=True)  # 문자 센터 정렬
+    # st.markdown('### :blue[PM Diagram (RC : ' + RC_Code + ')] :sparkle:')
     if 'RC' in PM_Type:
         if 'left' in loc:
-            PM_x1 = R.ZMn;  PM_y1 = R.ZPn;  PM_x2 = R.ZMd;  PM_y2 = R.ZPd;  PM_x7 = R.Mn;  PM_y7 = R.Pn;  PM_x8 = R.Md;  PM_y8 = R.Pd
-            st.write('### :blue[PM Diagram (RC : ' + RC_Code + ')] :sparkle:')
-            c1 = 'red';  c2 = 'green';  ls1 = '--';  ls2 = '-';  lb1 = r'$\rm P_n-M_n Diagram$';  lb2 = r'$\rm \phi P_n-\phi M_n Diagram$'
+            PM_x1 = R.ZMn;  PM_y1 = R.ZPn;  PM_x2 = R.ZMd;  PM_y2 = R.ZPd;  PM_x7 = R.Mn;  PM_y7 = R.Pn;  PM_x8 = R.Md;  PM_y8 = R.Pd            
+            c1 = 'red';  c2 = 'green';  ls1 = '--';  ls2 = '-';  lb1 = txt1;  lb2 = txt2;  txt_title = txt3
         elif 'right' in loc:
             PM_x1 = F.ZMn;  PM_y1 = F.ZPn;  PM_x2 = F.ZMd;  PM_y2 = F.ZPd;  PM_x7 = F.Mn;  PM_y7 = F.Pn;  PM_x8 = F.Md;  PM_y8 = F.Pd
-            st.write('### :blue[PM Diagram (FRP : ' + FRP_Code + ')] :sparkle:')
-            c1 = 'magenta';  c2 = 'cyan';  ls1 = '--';  ls2 = '-';  lb1 = r'$\rm P_n-M_n Diagram$';  lb2 = r'$\rm \phi P_n-\phi M_n Diagram$'
+            c1 = 'magenta';  c2 = 'cyan';  ls1 = '--';  ls2 = '-';  lb1 = txt1;  lb2 = txt2;  txt_title = txt4
     else:   ## elif 'Pn' in PM_Type:
         if 'left' in loc:
             PM_x1 = R.ZMn;  PM_y1 = R.ZPn;  PM_x2 = F.ZMn;  PM_y2 = F.ZPn;  PM_x7 = R.Mn;  PM_y7 = R.Pn;  PM_x8 = F.Mn;  PM_y8 = F.Pn
-            st.write('### :blue[Pn - Mn Diagram] :sparkle:')
-            c1 = 'red';  c2 = 'magenta';  ls1 = '--';  ls2 = '--';  lb1 = RC_Code + ' (RC)';  lb2 = FRP_Code + ' (FRP)'
+            c1 = 'red';  c2 = 'magenta';  ls1 = '--';  ls2 = '--';  lb1 = txt3;  lb2 = txt4;  txt_title = txt1
         elif 'right' in loc:
             PM_x1 = R.ZMd;  PM_y1 = R.ZPd;  PM_x2 = F.ZMd;  PM_y2 = F.ZPd;  PM_x7 = R.Md;  PM_y7 = R.Pd;  PM_x8 = F.Md;  PM_y8 = F.Pd
-            st.write('### :blue[Pd - Md Diagram] :sparkle:')
-            c1 = 'green';  c2 = 'cyan';  ls1 = '-';  ls2 = '-';  lb1 = RC_Code + ' (RC)';  lb2 = FRP_Code + ' (FRP)'
+            c1 = 'green';  c2 = 'cyan';  ls1 = '-';  ls2 = '-';  lb1 = txt3;  lb2 = txt4;  txt_title = txt2
 
-    fig, ax = plt.subplots()
-    ax.set_xlabel(r'$\rm M_{n}$ or $\rm \phi M_{n}$ [kN$\cdot$m]', fontdict = {'size': 16})
-    ax.set_ylabel(r'$\rm P_{n}$ or $\rm \phi P_{n}$ [kN]', fontdict = {'size': 16})
+    fig, ax = plt.subplots(layout = 'constrained')  # tight_layout = True
+    ax.set_xlabel(r'$\rm M_{n}$ or $\rm \phi M_{n}$ [kN$\cdot$m]', fontdict = {'size': fs})
+    ax.set_ylabel(r'$\rm P_{n}$ or $\rm \phi P_{n}$ [kN]', fontdict = {'size': fs})    
     r = 1.15;  xmax = r*np.max(PM_x1);  ymin = 1.25*np.min([np.min(PM_y1), np.min(PM_y2)]);  ymax = r*np.max(PM_y1)
     ax.set(xlim = (0, xmax), ylim = (ymin, ymax))    
     
@@ -168,10 +165,11 @@ def PM_plot(loc):
 
     [lw1, lw2] = [1.2, 2.]
     ax.plot([0, xmax],[0, 0], linewidth = lw1, color = 'black')     # x축 (y축 = 0)
+    ax.set_title(txt_title, pad = 12, backgroundcolor = 'orange', fontdict = {'size': fs+4})
     ax.plot(PM_x1,PM_y1, linewidth = lw2, color = c1, linestyle = ls1, label = lb1)
-    ax.plot(PM_x2,PM_y2, linewidth = lw2, color = c2, linestyle = ls2, label = lb2)    
-    ax.legend(loc = 'upper right', prop = {'size': 14})
-    ax.grid(linestyle = '--', linewidth = 0.2)
+    ax.plot(PM_x2,PM_y2, linewidth = lw2, color = c2, linestyle = ls2, label = lb2)
+    ax.legend(loc = 'upper right', prop = {'size': fs})
+    ax.grid(linestyle = '--', linewidth = 0.4)
     current_values = plt.gca().get_yticks()
     plt.gca().set_yticklabels(['{:,.0f}'.format(x) for x in current_values])   # 천단위 (,)
 
@@ -180,8 +178,8 @@ def PM_plot(loc):
         if 'left' in loc:  [x2, y2, c] = [R.Md[2-1], R.Pd[2-1], 'green']
         if 'right' in loc: [x2, y2, c] = [F.Md[2-1], F.Pd[2-1], 'cyan']
         ax.plot([0, x2],[y2, y2], linewidth = lw2, color = c)  # phi*Pn(max)
-        txt = r'$\bf \phi P_{n(max)} =$' + str(round(y2, 1)) + 'kN'
-        ax.text(0, 0.95*y2, txt, ha = 'left', va = 'top')
+        txt = r'$\phi P_{n(max)}$ =' + str(round(y2, 1)) + 'kN'
+        ax.text(x2/2, 0.97*y2, txt, ha = 'center', va = 'top')
         
         for i in range(1, 4):
             if 'left' in loc:  [x, y] = [R.Mn[i], R.Pn[i]]
@@ -193,21 +191,69 @@ def PM_plot(loc):
             if 'right' in loc: val = F.e[i]
             ha ='left' if i == 3-1 else 'right'
             c = 'blue' if val > 0 else 'red'
-            if i == 2-1:  txt = r'$\bf e_{min} =' + str(round(val, 1)) + 'mm$'
-            if i == 3-1:  txt = txt = r'$\bf e_{0} =' + str(round(val, 1)) + 'mm$'
-            if i == 4-1:  txt = r'$\bf e_{b} =' + str(round(val, 1)) + 'mm$'
+            if i == 2-1:  txt = r'$e_{min}$ =' + str(round(val, 1)) + 'mm'
+            if i == 3-1:  txt = txt = r'$e_{0}$ =' + str(round(val, 1)) + 'mm'
+            if i == 4-1:  txt = r'$e_{b}$ =' + str(round(val, 1)) + 'mm'
             ax.text(0.4*x, 0.4*y, txt, ha = ha, color = c, backgroundcolor = 'yellow')
+
+    # A, B, C, D, E, F, G 점 찍기
+    for i in [1, 2]:     # 1 : Pn-Mn,  2 : Pd-Md
+        for z1 in range(len(PM_x7)):
+            if i == 1:
+                [x1, y1] = [PM_x7[z1], PM_y7[z1]]
+                if z1 == len(PM_x7) - 1: txt = 'c = 0'
+                if z1 == 1-1: txt = r'$\bf A \; (Pure \; Compression)$'   # \;, \quad : 공백 넣기
+                if z1 == 2-1: txt = r'$\bf B \; (e_{min}$)'
+                if z1 == 3-1: txt = r'$\bf C \; (Zero \; Tension)$'
+                if z1 == 4-1: txt = 'D ($e_b$) \n Balance Point'
+                if z1 == 5-1: txt = r'$\bf E \; (\epsilon_t = 2.5\epsilon_y)$'
+                if z1 == 6-1: txt = r'$\bf F \; (Pure \; Moment)$'
+                if z1 == 7-1: txt = r'$\bf G \; (Pure \; Tension)$'
+                
+                bc = 'cyan' if z1 == 4-1 else 'None'
+                [sgnx, ha] = [1, 'left'];  va = 'center'
+                sgny = -1 if z1 >= 4-1 else 1
+                if 'right' in loc:
+                    if z1 == 5-1: txt = r'$\bf E \; (\epsilon_t = 0.8\epsilon_{fu})$'
+                    if z1 == 6-1: [sgnx, ha] = [0, 'right']
+                if 'RC' not in PM_Type:
+                    if z1 == 5-1: txt = r'$\bf E$'
+
+                x = x1 + sgnx*0.02*max(PM_x1);  y = y1 + sgny*0.02*max(PM_y1)
+                ax.text(x, y, txt, ha = ha, va = va, backgroundcolor = bc)
+            elif i == 2:
+                [x1, y1] = [PM_x8[z1], PM_y8[z1]]
+
+            if z1 == len(PM_x7) -1:  c = 'k'
+            if z1 == 1-1: c = 'red'
+            if z1 == 2-1: c = 'green'
+            if z1 == 3-1: c = 'blue'
+            if z1 == 4-1: c = 'cyan'
+            if z1 == 5-1: c = 'magenta'
+            if z1 == 6-1: c = 'yellow'
+            if z1 == 7-1: c = 'darkred'
+            ax.plot(x1, y1, 'o', markersize = 8, markeredgecolor = 'black', linewidth = lw1, color = c)
 
     print(fig)
     st.pyplot(fig)
+###! PM_plot function   ###################
 
+plt.style.use('default')  # 'dark_background'
+# plt.style.use('classic')
+# plt.style.use("fast")
+# plt.style.available
+plt.rcParams['figure.figsize'] = (10, 8)  # 13in.*23in. (27in. Monitor 모니터)
+# plt.rcParams['figure.dpi'] = 200  # plt.rcParams['figure.facecolor'] = 'gainsboro' # plt.rcParams['axes.facecolor'] = 'green'
+plt.rcParams['font.size'] = fs
 
-col_left, col_center, col_right = st.columns([1.4, 1, 1.4])
+# col_left, col_center, col_right = st.columns([1.4, 1, 1.4])
+col_left, col_right = st.columns(2)
 with col_left:
     PM_plot('left')
 with col_right:
     PM_plot('right')
     
+col_left, col_center, col_right = st.columns([1, 1, 1])
 with col_center:
     fig, ax = plt.subplots(figsize = (8, 2.2*8))
     # plt.axis('off')
@@ -224,17 +270,18 @@ with col_center:
 
 # print(fig.dpi,'dpi')
 # print(plt.rcParams['figure.dpi'], plt.rcParams['figure.figsize'])
-###? Plot   ####################################################
+###? Plot  #############################################################################################################
 
 
-###? creating a DataFrame   ####################################################
+###? creating a DataFrame  ############################################################################################################
 # pd.set_option('display.colheader_justify', 'center')
 def color_np_c(value, c1, c2):
     if value < 0: color = c1
     else:         color = c2
     return "color: " + color
 
-st.dataframe(df.style.applymap(color_np_c, c1 = 'red', c2 = '', subset = pd.IndexSlice[['e ', 'c ', 'Pn ', 'Pd ', 'e', 'c', 'Pn', 'Pd']])
+with col_left:
+    st.dataframe(df.style.applymap(color_np_c, c1 = 'red', c2 = '', subset = pd.IndexSlice[['e ', 'c ', 'Pn ', 'Pd ', 'e', 'c', 'Pn', 'Pd']])
                 .format({'φ': '{:.3f}', 'φ ': '{:.3f}'}, precision = 1, thousands = ',')
                 .set_properties(**{'font-size': '150%', 'background-color': '', 'border-color': 'red', 'text-align': 'center'})
                 .set_properties(align = "center")
@@ -292,7 +339,7 @@ st.dataframe(df.style.applymap(color_np_c, c1 = 'red', c2 = '', subset = pd.Inde
 # df.style.applymap(color_np_custom, c1 = "#FF0000", c2 = "#0000BB")
 # df.style.applymap(color_np,
 #                   subset = pd.IndexSlice[[1, 2], ["B", "D"]])  # 스타이 부분 적용
-###? creating a DataFrame   ####################################################
+###? creating a DataFrame  #############################################################################################################
 
 
 

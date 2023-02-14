@@ -93,6 +93,14 @@ def Cal(In):
     ep_s[z1, 0:2] = -ep_y;  fs[z1, 0:2] = -fy
     ###* Calculation Point G(7-1) : Pure Tension(e = 0, c = inf, Mn = 0)
 
+    ##* %%% Calculation Point x = c = 0(8-1) : for Only ACI 440.1    
+    if 'FRP' in Reinforcement_Type and 'ACI 440.1' in FRP_Code:    #! for ACI 440.1R**  Only Only   
+        if 'Rectangle' in Section_Type: M = (2*gamma - 1)**2/(2*gamma) *(A1 + A2/3)*ffu*hD/1e6
+        if 'Circle' in Section_Type:    M = (2*gamma - 1)**2/(8*gamma) *np.sum(Ast)*ffu*hD/1e6
+        P = -np.sum(Ast)/(2*gamma)*ffu/1e3
+        [Pn8, Mn8, Pd8, Md8] = [P, M, 0.55*P, 0.55*M]  # c = 0, ep_s = -ep_y, fs = -fy
+    ##* %%% Calculation Point x = c = 0(8-1) : for Only ACI 440.1
+
     ###* Calculation Point C(3-1), D(4-1) (Zero Tension, Balacne Point) and E(5-1) &&  Z = eps/ep_cu  0.1~9.?
     [ep_si, fsi, Fsi] = [np.zeros((Layer, np.max(ni))), np.zeros((Layer, np.max(ni))), np.zeros((Layer, np.max(ni)))]
     for zz in [1, 2]:
@@ -143,7 +151,7 @@ def Cal(In):
     ###* Calculation Point C(3-1), D(4-1) (Zero Tension, Balacne Point) and E(5-1) &&  Z = eps/ep_cu  0.1~9.?
 
     ###* Calculation Point B(2-1), F(6-1) : Minimum Eccentricity (e = min), Pure Moment(Pn = 0)
-    [iter, toler, temp] = [1e5, 1e-1, np.zeros(1000)]
+    [iter, tol, temp] = [1e5, 1e-1, np.zeros(1000)]
     for z1 in [2-1, 6-1]:        
         if z1 == 2-1: Pnn = alpha*Pn[1-1]
         if z1 == 6-1: Pnn = 0
@@ -153,7 +161,6 @@ def Cal(In):
                     x = alpha/beta1*h;  alp = x/d;                          c = x
                     Cc = Pnn;           Lc = (1 - alp*beta1*gamma)*h/2;     M = Cc*Lc/1e3
                 elif 'Circle' in Section_Type:
-                    tol = toler
                     for k3 in [1, 2, 3]:
                         for k1 in np.arange(1, iter):
                             x = hD/2 + (k1 - 1)*hD/iter;  alp = x/d;  c = x
@@ -161,31 +168,46 @@ def Cal(In):
                             if np.abs(Pnn - P) < tol: break
                         if k1 == iter: tol = 10*tol   #! 수렴이 안될 경우
                         else: break
-            elif z1 == 6-1 and Pn[4-1] < 0:        #! Pn(4-1) : D, Balance Point < 0
-                if 'Rectangle' in Section_Type:
-                    tol = toler
-                    for k3 in [1, 2, 3]:
-                        for k1 in np.arange(1, iter):
-                            x = hD/100 + (k1 - 1)*hD/2/iter;  alp = x/d;  c = x
-                            [P, M] = ACI440_Rectangle(alp, beta1, gamma, fck, ep_cu, Ef, A1, A2, b, h)
-                            if np.abs(P - Pnn) <= tol: break
-                        if k1 == iter: tol = 10*tol   #! 수렴이 안될 경우
-                        else: break
-                elif 'Circle' in Section_Type:
-                    tol = toler
-                    for k3 in [1, 2, 3]:          #! 처음부터 고려한 경우  ##########################
-                        for k1 in np.arange(1, iter):
-                            x = hD/100 + (k1 - 1)*hD/2/iter;  alp = x/d;  c = x
+            elif z1 == 6-1:
+                if Pn[4-1] > 0:          #! Pn(4-1) : D, Balance Point > 0일때 구할수 없고(식이 없음), 직선 보간 한다
+                    P = 0
+                    M = Pn8*(Mn[4-1] - Mn8)/(Pn8 + Pn[4-1])
+                    c = cc[4-1]*0.9
+                    pass
+                elif Pn[4-1] < 0:        #! Pn(4-1) : D, Balance Point < 0일때 F(Pn=0)점을 계산으로 구할수 있다.
+                    if 'Rectangle' in Section_Type:
+                        for k3 in [1, 2, 3]:
+                            for k1 in np.arange(1, iter):
+                                x = hD/100 + (k1 - 1)*hD/2/iter;  alp = x/d;  c = x
+                                [P, M] = ACI440_Rectangle(alp, beta1, gamma, fck, ep_cu, Ef, A1, A2, b, h)
+                                if np.abs(P - Pnn) <= tol: break
+                            if k1 == iter: tol = 10*tol   #! 수렴이 안될 경우
+                            else: break
+                    elif 'Circle' in Section_Type:
+                        k7 = 0;  x = hD/2
+                        for k1 in np.arange(1, 1000):          #! 처음부터 고려한 경우  ##########################
+                            alp = x/d;  c = x
                             [P, M] = ACI440_Circle(alp, beta1, gamma, fck, ep_cu, Ef, Ast, D)
-                            if np.abs(Pnn - P) < tol: break
-                        if k1 == iter: tol = 10*tol   #! 수렴이 안될 경우
-                        else: break
+                            temp[k1] = Pnn - P
+                            sgn1 = np.sign(temp[k1-1]);  sgn2 = np.sign(temp[k1]);  sgn = sgn1*sgn2
+                            if sgn == -1: k7 = k7 + 1
+                            x = x + sgn2*100/10**k7
+                            if np.abs(temp[k1]) < 1e-1: break
+                        # tol = 1
+                        # for k3 in [1, 2, 3]:          #! 처음부터 고려한 경우  ##########################
+                        #     for k1 in np.arange(1, iter):
+                        #         x = hD/100 + (k1 - 1)*hD/2/iter;  alp = x/d;  c = x
+                        #         [P, M] = ACI440_Circle(alp, beta1, gamma, fck, ep_cu, Ef, Ast, D)
+                        #         if np.abs(Pnn - P) < tol: break
+                        #     if k1 == iter: tol = 10*tol   #! 수렴이 안될 경우
+                        #     else: break
+
             for L in range(Layer):
                 for i in np.arange(ni[L]):
                     ep_si[L, i] = ep_cu*(c - dsi[L, i])/c
                     fsi[L, i] = Es*ep_si[L, i]
         else:                                                                       #############! for RC & AASHTO
-            tol = toler;  k7 = 0;  c = hD/2
+            k7 = 0;  c = hD/2
             for k1 in np.arange(2, 1000):
                 if 'Rectangle' in Section_Type: bhD = [hD, b, h]
                 elif 'Circle' in Section_Type: bhD = [hD, D]
@@ -201,14 +223,6 @@ def Cal(In):
         ee[z1] = np.inf if z1 == 6-1 else Mn[z1]/Pn[z1]*1e3
         ep_s[z1, 0] = ep_si[0, 0];  ep_s[z1, 1] = ep_si[0, -1];  fs[z1, 0] = fsi[0, 0];  fs[z1, 1] = fsi[0, -1]
     ###* Calculation Point B(2-1), F(6-1) : Minimum Eccentricity (e = min), Pure Moment(Pn = 0)
-
-    ##* %%% Calculation Point x = c = 0(8-1) : for Only ACI 440.1    
-    if 'FRP' in Reinforcement_Type and 'ACI 440.1' in FRP_Code:    #! for ACI 440.1R**  Only Only   
-        if 'Rectangle' in Section_Type: M = (2*gamma - 1)**2/(2*gamma) *(A1 + A2/3)*ffu*hD/1e6
-        if 'Circle' in Section_Type:    M = (2*gamma - 1)**2/(8*gamma) *np.sum(Ast)*ffu*hD/1e6
-        P = -np.sum(Ast)/(2*gamma)*ffu/1e3
-        [Pn8, Mn8, Pd8, Md8] = [P, M, 0.55*P, 0.55*M]  # c = 0, ep_s = -ep_y, fs = -fy
-    ##* %%% Calculation Point x = c = 0(8-1) : for Only ACI 440.1
 
     ###*%% Sorting    
     Ze = np.concatenate((ee, Zee));   Zc = np.concatenate((cc, Zcc));         ZPn = np.concatenate((Pn, ZPn))
@@ -246,7 +260,7 @@ def Cal(In):
             if zz == 2: Zphi[z1] = ph    
     if 'RC' in Reinforcement_Type:  [phi[-1], Zphi[-1]] = [0.85, 0.85]
     if 'FRP' in Reinforcement_Type: [phi[-1], Zphi[-1]] = [0.55, 0.55]
-    ### 강도감소계수 (phi)    
+    ### 강도감소계수 (phi)
     Pd = phi*Pn;  Md = phi*Mn;  ZPd = Zphi*ZPn;  ZMd = Zphi*ZMn
 
     class PM: pass
@@ -271,14 +285,17 @@ def ACI440_Circle(alp, beta1, gamma, fck, ep_cu, Ef, Ast, D):
     Cc = 0.85*fck*(t - np.sin(t)*np.cos(t))*D**2/4
     Mc = 0.85*fck*(np.sin(t))**3*D**3/12
 
-    t = np.arccos((1 - 2*alp*gamma)/(2*gamma - 1))
-    if t < 0  or  t > np.pi:  print('ACI440_Circle theta', t)
-    if np.iscomplex(t) or  np.abs(t - np.pi) < 1e-2:   # if np.abs(t - np.pi) < 1e-2:  T = 0;  Mt = 0
+    tt = (1 - 2*alp*gamma)/(2*gamma - 1)
+    if tt < -1: tt = -1
+    if tt >  1: tt = 1
+    t = np.arccos(tt)
+    if t < 0  or  t > np.pi: print('ACI440_Circle theta', t)
+    if np.iscomplex(t) or np.abs(t - np.pi) < 1e-2:   # if np.abs(t - np.pi) < 1e-2:  T = 0;  Mt = 0
         [T, Mt] = [0, 0]
     else:
         T = (np.pi*np.cos(t) - t*np.cos(t) + np.sin(t))/(np.pi*(1 + np.cos(t))) *(1 - alp)/alp *ep_cu*Ef*np.sum(Ast);
         Mt = (np.pi - t + np.sin(t)*np.cos(t))/(2*np.pi*(1 + np.cos(t))) *(1 - alp)/alp *(gamma - 1/2) *ep_cu*Ef*np.sum(Ast)*D;
-    
+
     [P, M] = [(Cc - T)/1e3, (Mc + Mt)/1e6]
     return P, M
 

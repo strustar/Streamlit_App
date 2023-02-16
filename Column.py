@@ -3,9 +3,10 @@ os.system('cls')
 import time
 import streamlit as st
 import Column_Examples as ex
-import streamlit_nested_layout  # nested columns
+# import streamlit_nested_layout  # nested columns
 import pandas as pd, numpy as np
 import matplotlib.pyplot as plt, matplotlib.patches as patches
+# from streamlit_message import message
 # from io import BytesIO
 
 ###! PM_plot function   ###################
@@ -25,7 +26,7 @@ def PM_plot(loc):
         elif 'right' in loc:
             PM_x1 = F.ZMn;  PM_y1 = F.ZPn;  PM_x2 = F.ZMd;  PM_y2 = F.ZPd;  PM_x7 = F.Mn;  PM_y7 = F.Pn;  PM_x8 = F.Md;  PM_y8 = F.Pd
             c1 = 'magenta';  c2 = 'cyan';  ls1 = '--';  ls2 = '-';  lb1 = txt1;  lb2 = txt2;  txt_title = txt4
-    else:   ## elif 'Pn' in PM_Type:
+    elif 'Pn' in PM_Type:
         if 'left' in loc:
             ax.set_xlabel(r'$\rm M_{n}$ [kN$\cdot$m]', fontdict = {'size': fs})
             ax.set_ylabel(r'$\rm P_{n}$ [kN]', fontdict = {'size': fs})
@@ -39,13 +40,12 @@ def PM_plot(loc):
     
     xmax = 1.15*np.max(PM_x1);  ymin = 1.25*np.min([np.min(PM_y1), np.min(PM_y2)]);  ymax = 1.15*np.max(PM_y1)
     ax.set(xlim = (0, xmax), ylim = (ymin, ymax))    
-    a=3
     for i in [1, 2]:      # x, y ticks
-        if i == 1: [mx, mn] = [xmax, 0]
-        if i == 2: [mx, mn] = [ymax, ymin]
-        n = len(str(round(mx-mn)))        # 숫자의 자리수 확인
-        r = 10 if n <= 3 else 10**(n-2)   # 9는 표시될 tick의 수 (8~10)
-        s = np.ceil((mx-mn)/9/r)*r
+        if i == 1: [mn, mx] = [0, xmax]
+        if i == 2: [mn, mx] = [ymin, ymax]
+        n = len(str(round(mx)))            # 숫자의 자리수 확인
+        r = 10 if n <= 3 else 10**(n-2)
+        s = np.ceil((mx-mn)/10/r)*r        # 10은 표시될 tick의 수 (9~11)
         if i == 1: ax.set_xticks(np.arange(0, xmax, s))
         if i == 2: ax.set_yticks(np.arange(s*(ymin//s+1), ymax, s))
 
@@ -58,6 +58,8 @@ def PM_plot(loc):
     ax.grid(linestyle = '--', linewidth = 0.4)
     current_values = plt.gca().get_yticks()
     plt.gca().set_yticklabels(['{:,.0f}'.format(x) for x in current_values])   # 천단위 (,)
+    current_values = plt.gca().get_xticks()
+    plt.gca().set_xticklabels(['{:,.0f}'.format(x) for x in current_values])   # 천단위 (,)
 
     # e_min(B), Zero Tension(C), e_b(D), phi*Pn(max)
     if 'RC' in PM_Type:   #! PM_Type = RC 일때만 Only
@@ -85,16 +87,16 @@ def PM_plot(loc):
     # 테이블 연동 플롯 (직선)
     if 'one' not in selected_row and 'RC' in PM_Type:
         lw = 2
-        if 'A ' in selected_row: n = 0;  lw = 4
-        if 'B ' in selected_row: n = 1
-        if 'C ' in selected_row: n = 2
-        if 'D ' in selected_row: n = 3
-        if 'E ' in selected_row: n = 4
-        if 'F ' in selected_row: n = 5
-        if 'G ' in selected_row: n = 6;  lw = 4
+        if 'A ' in selected_row: n = 0;  c = 'red';  lw = 4
+        if 'B ' in selected_row: n = 1;  c = 'green'
+        if 'C ' in selected_row: n = 2;  c = 'blue'
+        if 'D ' in selected_row: n = 3;  c = 'cyan'
+        if 'E ' in selected_row: n = 4;  c = 'magenta'
+        if 'F ' in selected_row: n = 5;  c = 'yellow'
+        if 'G ' in selected_row: n = 6;  c = 'darkred';  lw = 4
         if 'left' in loc:  [x1, y1] = [R.Mn[n], R.Pn[n]]
         if 'right' in loc: [x1, y1] = [F.Mn[n], F.Pn[n]]
-        ax.plot([0, x1],[0, y1], linewidth = lw, color = 'magenta')
+        ax.plot([0, x1],[0, y1], linewidth = lw, color = 'blue')
 
     # A, B, C, D, E, F, G 점 찍기
     for i in [1, 2]:     # 1 : Pn-Mn,  2 : Pd-Md
@@ -109,8 +111,11 @@ def PM_plot(loc):
                 if z1 == 5-1: txt = r'$\bf E \; (\epsilon_t = 2.5\epsilon_y)$'
                 if z1 == 6-1: txt = r'$\bf F \; (Pure \; Moment)$'
                 if z1 == 7-1: txt = r'$\bf G \; (Pure \; Tension)$'
-                
-                bc = 'cyan' if z1 == 4-1 else 'None'
+
+                if 'left' in loc:
+                    bc = 'lightgreen' if z1 == 4-1 else 'none'
+                if 'right' in loc:
+                    bc = 'cyan' if z1 == 4-1 else 'none'
                 sgnx = 1;  ha = 'left';  va = 'center'
                 sgny = -1 if z1 >= 4-1 else 1
                 if 'right' in loc:
@@ -167,7 +172,7 @@ with col_left:
 
     col = st.columns([1.5, 1.5, 1, 1])    
     with col[0]:
-        RC_Code = st.selectbox('**:green[RC Code]**', ('KCI-2012', 'KDS-2021'), key = 'RC_Code')
+        RC_Code = st.selectbox('**:green[RC Code]**', ('KCI-2012', 'KDS-2021'), key = 'RC_Code', index = 1)
     with col[1]:
         FRP_Code = st.selectbox('**:green[FRP Code]**', ('AASHTO-2018', 'ACI 440.1R-06(15)', 'ACI 440.11-22'), key = 'FRP_Code')
     with col[2]:
@@ -235,7 +240,9 @@ with col_right:
 with col_center:
     container_center = st.container()
 ########? Plot
-
+if 'Pn' in PM_Type:
+    st.session_state.selected_row = 'Select one below'    
+    # st.info('먼저 PM Diagram Option을 RC vs. FRP로 설정하세요', icon = "ℹ️")
 
 #######? Table
 col1, col2, col3 = st.columns([2.5, 0.74, 0.96])
@@ -244,11 +251,12 @@ with col1:
 
 with col2:
     st.markdown('#### :blue[Select one from A to G below]')
-    selected_row = st.radio('**:green[Select One]**', ('Select one below', 'A (Pure Compression)', 'B (Minimum Eccentricity)', 'C (Zero Tension)', 'D (Balance Point)', 'E (ε_t = 2.5*ε_y or 0.8*ε_fu)', 'F (Pure Moment)', 'G (Pure Tension)'), label_visibility = 'collapsed')
-    
+    st.markdown('###### :blue[PM Diagram Option : RC vs. FRP을 선택했을 경우]')
+    selected_row = st.radio('**:green[Select One]**', ('Select one below', 'A (Pure Compression)', 'B (Minimum Eccentricity)', 'C (Zero Tension)', 'D (Balance Point)', 'E (ε_t = 2.5*ε_y or 0.8*ε_fu)', 'F (Pure Moment)', 'G (Pure Tension)'), label_visibility = 'collapsed', key = 'selected_row')    
+
 with col3:
     st.markdown('#### :blue[Reinforcement Layer (Rebar & FRP)]')
-    Layer = st.radio('The number of layer', ('Layer 1', 'Layer 2', 'Layer 3'), horizontal = True, help = '보강층의 수', key = 'Layer')
+    Layer = st.radio('The number of layer', ('Layer 1', 'Layer 2', 'Layer 3'), horizontal = True, help = '보강층의 수', key = 'Layer', index = 0)
     if 'Layer 1' in Layer: Layer = 1
     elif 'Layer 2' in Layer: Layer = 2
     elif 'Layer 3' in Layer: Layer = 3
@@ -320,40 +328,221 @@ plt.rcParams['font.size'] = fs
 fig = PM_plot('left');  container_left.pyplot(fig)
 fig = PM_plot('right');  container_right.pyplot(fig)
 
-fig, ax = plt.subplots(figsize = (8, 2*8))
+fig, ax = plt.subplots(figsize = (8, 2*8)) #, layout ='constrained')
 # ax.set_facecolor('red')
 xlim = 50.;  ylim = 2*xlim
 ax.set(xlim = (0, xlim), ylim = (0, ylim))
 plt.axis('off')  # plt.axis('equal')
-# plt.plot([0, 50], [0, 50])
-# lines.Line2D([1., 2., 30.], [10., 20.],  linewidth = 3.)
-# ax.add_patch(patches.Rectangle((50, 50), 50, 50, color = 'green'))
-
+ax.add_patch(patches.Rectangle((0, 0), xlim, ylim, facecolor = 'ghostwhite', edgecolor = 'black', linewidth = 0))
 
 ### 콘크리트 단면
 base_scale = 0.5*xlim
 if 'Rectangle' in Section_Type:
-    mx = np.max([b, h]);  mr = base_scale/mx
-    w = h*mr;  h = b*mr;  x = (xlim - w)/2;  y = (ylim - h)/2    
+    mx = np.max([In.b, In.h]);  mr = base_scale/mx
+    w = In.h*mr;  h = In.b*mr;  x = (xlim - w)/2;  y = (ylim - h)/2
     ax.add_patch(patches.Rectangle((x, y), w, h, facecolor = 'yellow', edgecolor = 'black', linewidth = 1))
-elif 'Circle' in Section_Type:
-    mx = D;  mr = base_scale/mx
-    w = D*mr;  h = w;  cx = xlim/2;  cy = ylim/2
+if 'Circle' in Section_Type:
+    mx = In.D;  mr = base_scale/mx
+    w = In.D*mr;  h = w;  cx = xlim/2;  cy = ylim/2;  x = (xlim - w)/2;  y = (ylim - h)/2
     ax.add_patch(patches.Circle((cx, cy), w/2, facecolor = 'yellow', edgecolor = 'black', linewidth = 1))
 
-# 치수
-x1 = x
-x2 = x + w
-y1 = y - 4
-y2 = y1
-plt.plot([x1, x2], [y1, y2], color = 'black')
+# 가로 치수
+x1 = x;  x2 = x + w;  y1 = y - 4;  al = 1.4;  aw = al/4;  # 화살표 길이, 폭
+if 'Rectangle' in Section_Type: txt = r'$\bf h = ' + str(round(In.hD)) + ' mm$'
+if 'Circle'    in Section_Type: txt = r'$\bf D = ' + str(round(In.hD)) + ' mm$'
+plt.plot([x1, x2], [y1, y1], color = 'black')
+plt.plot([x1, x1], [y1-al, y1+al], color = 'black')
+plt.plot([x2, x2], [y1-al, y1+al], color = 'black')
+ax.add_patch(patches.Polygon(((x1, y1), (x1+al, y1-aw), (x1+al, y1+aw)), closed = True, facecolor = 'black'))  # 삼각형
+ax.add_patch(patches.Polygon(((x2, y1), (x2-al, y1-aw), (x2-al, y1+aw)), closed = True, facecolor = 'black'))  # 삼각형
+ax.text((x1+x2)/2, y1+aw, txt, ha = 'center', va = 'bottom') #, fontweight = 'bold') #, fontsize = fs)
 
-# ax.add_patch(patches.Polygon((), (), ()), closed = True)  # 삼각형
+# 세로 치수
+if 'Rectangle' in Section_Type:
+    x1 = x - 4;  y1 = y;  y2 = y + h
+    txt = r'$\bf b = ' + str(round(In.b)) + '$'
+    plt.plot([x1, x1], [y1, y2], color = 'black')
+    plt.plot([x1-al, x1+al], [y1, y1], color = 'black')
+    plt.plot([x1-al, x1+al], [y2, y2], color = 'black')
+    ax.add_patch(patches.Polygon(((x1, y1), (x1-aw, y1+al), (x1+aw, y1+al)), closed = True, facecolor = 'black'))  # 삼각형
+    ax.add_patch(patches.Polygon(((x1, y2), (x1-aw, y2-al), (x1+aw, y2-al)), closed = True, facecolor = 'black'))  # 삼각형
+    ax.text(x1-aw, (y1+y2)/2, txt, ha = 'right', va = 'center')
 ### 콘크리트 단면
 
 ### 철근
+for L in range(Layer):
+    if L == 0: c = 'red'
+    if L == 1: c = 'green'
+    if L == 2: c = 'blue'
+    dc = In.dc[L]*mr;  dia = In.dia[L]*mr;  cr = 1.2*dia/2    # 원래 크기보다 20% 크게~ 보이게
+    
+    for i in range(In.nhD[L]):    # 전체 원형 등
+        if 'Rectangle' in Section_Type:
+            for j in range(In.nb[L]):
+                if (i > 0 and i < In.nhD[L]-1) and (j > 0 and j < In.nb[L]-1): continue
+                cx = x + w - dc - i*(w - 2*dc)/(In.nhD[L] - 1)
+                cy = y + h - dc - j*(h - 2*dc)/(In.nb[L] - 1)
+                ax.add_patch(patches.Circle((cx, cy), cr, facecolor = c, edgecolor = 'black', linewidth = 1))
+        if 'Circle' in Section_Type:
+            theta = i*2*np.pi/In.nhD[L];  r = In.D*mr/2 - dc
+            cx = x + w/2 + r*np.cos(theta);  cy = y + h/2 + r*np.sin(theta)
+            ax.add_patch(patches.Circle((cx, cy), cr, facecolor = c, edgecolor = 'black', linewidth = 1))
 
-### 철근
+    # 띠 또는 나선철근
+    if 'Rectangle' in Section_Type:
+        x1 = x + dc - cr;  y1 = y + dc - cr
+        w1 = w - 2*dc + 2*cr;  h1 = h - 2*dc + 2*cr
+        ax.add_patch(patches.Rectangle((x1, y1), w1, h1, facecolor = 'none', edgecolor = 'black'))
+    if 'Circle' in Section_Type:
+        ax.add_patch(patches.Circle((xlim/2, ylim/2), In.D*mr/2-dc+cr, facecolor = 'none', edgecolor = 'black', linewidth = 1))
+
+    # 가로 치수 (dc)
+    y1 = y + h + 2.5 + 4*L
+    for i in [1, 2]:        
+        if i == 1:
+            x1 = x + w - dc;  x2 = x1 + dc
+            txt = r'$\bf' + str(In.dc[L]) + '$'
+        elif i == 2:    # 가로 치수 (dc2)  % 원형 단면이고 홀수 개 철근 배근일때 양쪽 dc가 다름
+            if 'Circle' in Section_Type and In.nD[L]%2 == 1:   # %나머지 : 홀수
+                dc2 = np.max(R.dsi[L,:])
+                x1 = x;  x2 = x1 + w - dc2*mr
+                txt = r'$\bf' + str(round((In.D-dc2), 1)) + '$'
+
+        plt.plot([x1, x2], [y1, y1], color = 'black')
+        plt.plot([x1, x1], [y1-al, y1+al], color = 'black')
+        plt.plot([x2, x2], [y1-al, y1+al], color = 'black')
+        ax.add_patch(patches.Polygon(((x1, y1), (x1+al, y1-aw), (x1+al, y1+aw)), closed = True, facecolor = 'black'))  # 삼각형
+        ax.add_patch(patches.Polygon(((x2, y1), (x2-al, y1-aw), (x2-al, y1+aw)), closed = True, facecolor = 'black'))  # 삼각형
+        ax.text((x1+x2)/2, y1+3*aw, txt, ha = 'center', va = 'center', color = c)
+
+    # rho, 철근량, 보강량 정보 (A1, A2, A3)
+    txt = r'$\bf A_' + str(L+1) + ' = ' + str(round(R.Ast[L])) + 'mm^2$'
+    ax.text(0, y1, txt, ha = 'left', va = 'bottom', color = c)
+    
+    if L == 1-1:  # Only one
+        txt = r'$\bf \rho = ' + str(round(R.rho, 4)) + '$'
+        ax.text(xlim, y1, txt, ha = 'right', va = 'center', color = 'black')
+#### 철근
+
+#### 기둥
+y_col = 9;  xc = x + w/2
+plt.plot([x, x], [0, y_col], color = 'black')
+plt.plot([x+w, x+w], [0, y_col], color = 'black')
+plt.plot([x, x+w], [y_col, y_col], color = 'black')
+plt.plot([xc, xc], [0, 28], color = 'black', linestyle = '--')  # Center Line
+
+c = 'black'
+for PM in [1, 2]:  # Pn, e
+    n = 0;  txt = selected_row  # n = 0: A 또는 선택하지 않을때, 해석을 위해서    
+    if 'A ' in selected_row: n = 0
+    if 'B ' in selected_row: n = 1
+    if 'C ' in selected_row: n = 2
+    if 'D ' in selected_row: n = 3
+    if 'E ' in selected_row: n = 4;  txt = r'E ($\bf \epsilon_t = 2.5 \epsilon_y \; or \; 0.8 \epsilon_{fu}$)'  # \;, \quad : 공백 넣기
+    if 'F ' in selected_row: n = 5
+    if 'G ' in selected_row: n = 6    
+    if PM == 1: y_gap =  0;  bc = 'lightgreen';  ee = R.e[n];  Pd = R.Pd[n]
+    if PM == 2: y_gap = 10;  bc = 'cyan';        ee = F.e[n];  Pd = F.Pd[n]
+
+    if 'one' in selected_row:    # 초기값 (startupFcn)
+        txt = 'Select one \n from A to G below'        
+        txtPn = r'$\bf \phi P_n$';  txte = r'$\bf e$'
+        xee = x + (3 + PM)*R.hD*mr/6
+    elif 'one' not in selected_row and 'RC' in PM_Type:
+        txtPn = r'$\bf' + str(abs(round(Pd,1))) + 'kN$'
+        if ee == np.inf: txte = 'inf'
+        else: txte = r'$\bf' + str(abs(round(ee,1))) + 'mm$'
+        if ee == 0: txte = ''
+
+        xee = xc + ee*mr
+        if ee > 0.8*R.hD: xee = xc + 0.8*R.hD*mr
+        if ee < -0.8*R.hD: xee = xc - 0.8*R.hD*mr
+        # if Pd >= 0: c = 'black'
+        if Pd < 0:  c = 'red'
+
+    ax.text(xc, y_col/2, txt, ha = 'center', va = 'center', color = 'blue', backgroundcolor = 'white', fontweight = 'bold')
+    x1 = xee;  y1 = y_col + y_gap;  y2 = y1 + 8;  al = 2.2;  aw = al/4;  # 화살표 길이, 폭
+    plt.plot([x1, x1], [y1+1, y2+1], color = c, linewidth = 2)
+    if Pd >= 0: ax.add_patch(patches.Polygon(((x1, y1), (x1-aw, y1+al), (x1+aw, y1+al)), closed = True, facecolor = c))  # 삼각형
+    if Pd < 0:  ax.add_patch(patches.Polygon(((x1, y2), (x1-aw, y2-al), (x1+aw, y2-al)), closed = True, facecolor = c))  # 삼각형
+    ha = 'center'
+    if ee > 0.1: ha = 'right'
+    if ee <-0.1: ha = 'left'
+    ax.text(x1, y2, txtPn, ha = 'center', va = 'bottom', fontweight = 'bold', backgroundcolor = bc, color = c)
+
+    plt.plot([x1, xc], [(y1+y2)/2, (y1+y2)/2], color = 'black')
+    ax.text((x1+xc)/2, (y1+y2)/2, txte, ha = ha, va = 'center', fontweight = 'bold', backgroundcolor = bc, color = c)
+#### 기둥
+
+#### 변형률
+y_ep = 0.85*ylim
+plt.plot([x, x+w], [y_ep, y_ep], color = 'black')
+
+fix = R.ep_cu;  y_ep_cu = 8;  d = (R.hD - In.dc[0]);  x_gap = 1.;  lw = 2
+for PM in [1, 2]:
+    if PM == 1: ep_cu = R.ep_cu;  c = 'lightgreen';  ct = 'red'
+    if PM == 2: ep_cu = F.ep_cu;  c = 'cyan';        ct = 'magenta'
+
+    if 'one' in selected_row:    # 초기값 (startupFcn)
+        if PM == 1: ep_t = -0.002  # 인장(-)
+        if PM == 2: ep_t = -0.004
+        cc = ep_cu/(abs(ep_t) + ep_cu)*d        
+    elif 'one' not in selected_row and 'RC' in PM_Type:
+        if 'A ' in selected_row: n = 0
+        if 'B ' in selected_row: n = 1
+        if 'C ' in selected_row: n = 2
+        if 'D ' in selected_row: n = 3
+        if 'E ' in selected_row: n = 4
+        if 'F ' in selected_row: n = 5
+        if 'G ' in selected_row: n = 6
+        if PM == 1: ep_t = R.ep_s[n, 1];  cc = R.c[n]
+        if PM == 2: ep_t = F.ep_s[n, 1];  cc = F.c[n]        
+        txt = r'$\bf \epsilon_{t} = ' + str(abs(round(ep_t,4))) + '$'        
+        
+    xd = x + w - d*mr;  y_ep_t = y_ep - y_ep_cu*ep_t/fix;  xcc = x + w - cc*mr
+    if PM == 1: y_text = y_ep - 0.70*y_ep_cu
+    if PM == 2: y_text = y_ep - 0.25*y_ep_cu
+    y_ep_c = y_ep - y_ep_cu*ep_cu/fix
+
+    if cc == np.inf:
+        plt.plot([xd, x+w], [y_ep_t, y_ep_t], color = c, linewidth = lw)
+        plt.plot([xd, xd], [y_ep, y_ep_t], color = c, linewidth = lw)
+        plt.plot([x+w, x+w], [y_ep, y_ep_t], color = c, linewidth = lw)
+        txt = r'$\bf \epsilon_{t} = \epsilon_{cu} = ' + str(round(ep_cu,4)) + '$'
+        ax.text(x+w-d*mr/2, y_text, txt, ha = 'center', va = 'center', fontweight = 'bold', backgroundcolor = c, color = 'black')
+    elif cc == -np.inf:
+        plt.plot([xd, x+w], [y_ep_t, y_ep_t], color = ct, linewidth = lw)
+        plt.plot([xd, xd], [y_ep, y_ep_t], color = ct, linewidth = lw)
+        plt.plot([x+w, x+w], [y_ep, y_ep_t], color = ct, linewidth = lw)
+        txt = r'$\bf \epsilon_{t} = ' + str(round(ep_t,4)) + '$'
+        ax.text(x+w-d*mr/2, y_text, txt, ha = 'center', va = 'center', fontweight = 'bold', backgroundcolor = ct, color = 'black')
+    else:
+        if ep_t >= 0:  # 모두 압축(+)인 경우
+            plt.plot([xd, xd], [y_ep, y_ep_t], color = c, linewidth = lw)
+            plt.plot([xd, x+w], [y_ep_t, y_ep_c], color = c, linewidth = lw)
+            plt.plot([x+w, x+w], [y_ep, y_ep_c], color = c, linewidth = lw)
+            txt = r'$\bf \epsilon_{cu} = ' + str(round(ep_cu,4)) + '$'
+            ax.text(x+w+x_gap, y_text, txt, ha = 'left', va = 'center', fontweight = 'bold', backgroundcolor = c, color = 'black')
+            txt = r'$\bf \epsilon_{t} = ' + str(round(ep_t,4)) + '$'
+            ax.text(xd-x_gap, y_text, txt, ha = 'right', va = 'center', fontweight = 'bold', backgroundcolor = c, color = 'black')
+        else:          # 인장(-)이 포함된 경우
+            plt.plot([xd, xd], [y_ep, y_ep_t], color = c, linewidth = lw)
+            plt.plot([xd, x+w], [y_ep_t, y_ep_c], color = c, linewidth = lw)
+            plt.plot([x+w, x+w], [y_ep, y_ep_c], color = c, linewidth = lw)
+            txt = r'$\bf \epsilon_{cu} = ' + str(round(ep_cu,4)) + '$'
+            ax.text(x+w+x_gap, y_text, txt, ha = 'left', va = 'center', fontweight = 'bold', backgroundcolor = c, color = 'black')
+
+            plt.plot([xd, xd], [y_ep, y_ep_t], color = ct, linewidth = lw)
+            plt.plot([xd, xcc], [y_ep_t, y_ep], color = ct, linewidth = lw)            
+            txt = r'$\bf \epsilon_{t} = ' + str(round(ep_t,4)) + '$'
+            if 'one' in selected_row: txt = r'$\bf \epsilon_{t}$'    # 초기값 (startupFcn)
+            ax.text(xd-x_gap, y_text, txt, ha = 'right', va = 'center', fontweight = 'bold', backgroundcolor = ct, color = 'black')
+        
+    # if PM == 1: txt = r'$\bf RC$'
+    # if PM == 2: txt = r'$\bf FRP$'
+    # ax.text(0, y_text, txt, ha = 'left', va = 'center', fontweight = 'bold', color = 'black')
+#### 변형률
+# print(st.session_state.selected_row.index, 'gggg')
 container_center.pyplot(fig)
 
 # print(fig.dpi,'dpi')
@@ -376,6 +565,27 @@ container_table.dataframe(df.style.applymap(color_np_c, c1 = 'red', c2 = '', sub
             # .hide_index()
             # .set_table_styles([{'selector': 'tr:hover', 'props': [('background-color', 'yellow')]}])
             , use_container_width = True)  #,width = 1100)
+
+
+st.markdown('#### :blue[Datailed Data]')
+check = st.checkbox('세부 데이터를 보시려면 체크하세요')
+if check:
+    index = range(len(R.Ze))
+    dataR = pd.DataFrame({'e':R.Ze, 'c':R.Zc, 'Pn':R.ZPn, 'Mn':R.ZMn, 'φ':R.Zphi, 'Pd':R.ZPd, 'Md':R.ZMd, 'ε_t':R.Zep_s[:,1], 'f_t':R.Zfs[:,1], 'Detail':index})
+    R = F
+    dataF = pd.DataFrame({'e':R.Ze, 'c':R.Zc, 'Pn':R.ZPn, 'Mn':R.ZMn, 'φ':R.Zphi, 'Pd':R.ZPd, 'Md':R.ZMd, 'ε_t':R.Zep_s[:,1], 'f_t':R.Zfs[:,1], 'Detail':index})
+    df = pd.merge(dataR, dataF, on = 'Detail', suffixes = (' ',''))
+    # df = pd.concat([dataR, dataF], axis = 1)
+    # df.index = index
+
+    st.dataframe(df.style.applymap(color_np_c, c1 = 'red', c2 = '', subset = pd.IndexSlice[['e ', 'c ', 'Pn ', 'Pd ', 'e', 'c', 'Pn', 'Pd', 'ε_t', 'ε_t ', 'f_t', 'f_t ']])
+                .format({'φ': '{:.3f}', 'φ ': '{:.3f}', 'ε_t ': '{:.4f}', 'ε_t ': '{:.4f}'}, precision = 1, thousands = ',')
+                .set_properties(**{'font-size': '150%', 'background-color': '', 'border-color': 'red', 'text-align': 'center'})
+                .set_properties(align = "center")
+                .set_table_styles([dict(selector='th', props=[('text-align', 'center')])])
+                # .hide_index()
+                # .set_table_styles([{'selector': 'tr:hover', 'props': [('background-color', 'yellow')]}])
+                , use_container_width = True, height = 3500)
 
 
 # # hovering 미지원 streamlit
@@ -428,6 +638,4 @@ container_table.dataframe(df.style.applymap(color_np_c, c1 = 'red', c2 = '', sub
 # df.style.applymap(color_np,
 #                   subset = pd.IndexSlice[[1, 2], ["B", "D"]])  # 스타이 부분 적용
 ###? creating a DataFrame  #############################################################################################################
-
-
 

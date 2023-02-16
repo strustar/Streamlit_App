@@ -264,6 +264,9 @@ def Cal(In):
     Pd = phi*Pn;  Md = phi*Mn;  ZPd = Zphi*ZPn;  ZMd = Zphi*ZMn
 
     class PM: pass
+    In.hD = hD;  In.nhD = nh
+    if 'Circle' in Section_Type:
+        In.nhD = nD
     PM.ep_y, PM.ep_fu, PM.ep_cu, = ep_y, ep_fu, ep_cu
     PM.beta1, PM.eta, PM.alpha, PM.phi0 = beta1, eta, alpha, phi0
     
